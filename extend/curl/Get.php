@@ -55,7 +55,10 @@ class Get {
         file_put_contents($filename,$info."\r\n",FILE_APPEND);
     }
 
-    //处理curl资源的http_code
+    /*
+     * 处理curl资源的http_code
+     * @return  url,http_code,redirect_url|true
+     * */
     protected function _httpCodeHandle($resource,$url){
         $curl_info = curl_getinfo( $resource ) ;
         if ($curl_info['http_code'] == 200) {
