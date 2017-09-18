@@ -1,0 +1,172 @@
+{extends file="{$VIEW}/common/base.html"}
+{block name="title"}add菜单{/block}
+{block name="css"}
+<link href="{$__PUBLIC__}/admin/gather/add.css" type="text/css" rel="stylesheet">
+{/block}
+
+{block name="content"}
+
+<div class="form">
+    <form>
+        <div class="form-group">
+            <label>选择模板(可选)</label>
+            <select class="form-control" id="select">
+                <option >不选</option>
+                {foreach $tmps as $tmp}
+                    <option _id="{$tmp.id}">{$tmp.detail_url}</option>
+                {/foreach}
+
+            </select>
+        </div>
+
+        <input type="hidden" value="{$hid_type}" class="hid_type">
+        <div class="form-group">
+            <label>编码</label>
+            <input type="text" class="form-control iconv" placeholder="utf-8" name="iconv">
+        </div>
+        <!--小说详情-->
+        <div class="form-group">
+            <label>小说详情页地址</label>
+            <input type="text" class="form-control detail_url"  name="detail_url" required="required">
+        </div>
+        <div class="form-group">
+            <label>详情开始-演示</label>
+            <textarea class="form-control" style="resize: none;height: 140px;"  readonly>
+<div class="detail">;
+name:<h1>;
+author:<h1>;
+img:<div class="book-img">;
+desc:<p class="intro">;
+            </textarea>
+        </div>
+        <div class="form-group">
+            <label>详情结束-演示</label>
+            <textarea class="form-control" style="resize: none;height: 140px;"  readonly>
+<div class="book-comment">;
+name:</h1>;
+author:</h1>;
+img:</div>;
+desc:</p>;
+            </textarea>
+        </div>
+        <div class="form-group">
+            <label>详情正则-演示</label>
+            <textarea class="form-control" style="resize: none;height: 140px;"  readonly>
+name:/<em>(.*)<\/em>/U;
+author:/<span><a href=.*>(.*)<\/a>/U;
+img:/<img src="(.*)">/U;
+desc:/<p class="intro">(.*)/;
+            </textarea>
+        </div>
+        <div class="form-group">
+            <label>详情开始</label>
+            <textarea name="detail_start" class="form-control detail_start" style="resize: none;height: 140px;"></textarea>
+        </div>
+        <div class="form-group">
+            <label>详情结束</label>
+            <textarea name="detail_end" class="form-control detail_end" style="resize: none;height: 140px;"></textarea>
+        </div>
+        <div class="form-group">
+            <label>详情正则</label>
+            <textarea name="detail_pattern" class="form-control detail_pattern" style="resize: none;height: 140px;"></textarea>
+        </div>
+        <button type="button" class="btn btn-warning test" _type="detail">小说详情采集测试</button><br/><br/>
+
+        <!--小说章节-->
+        <div class="form-group">
+            <label>章节url(如何和详情url一样则不填)</label>
+            <input type="text" class="form-control section_url"  name="section_url">
+        </div>
+        <div class="form-group">
+            <label>章节开始</label>
+            <input type="text" class="form-control section_start"  name="section_start">
+        </div>
+        <div class="form-group">
+            <label>章节结束</label>
+            <input type="text" class="form-control section_end"  name="section_end">
+        </div>
+        <div class="form-group">
+            <label>章节正则</label>
+            <input type="text" class="form-control section_pattern"  name="section_pattern">
+        </div>
+        <div class="radio">
+            <label>
+                <input type="radio" name="section_page" value="0" checked>
+                无分页
+            </label>
+        </div>
+        <div class="radio">
+            <label>
+                <input type="radio" name="section_page" value="1">
+                有分页
+            </label>
+        </div>
+        <div class="section_page">
+            <div class="form-group ">
+                <label>章节分页开始</label>
+                <input type="text" class="form-control section_page_start"  name="section_page_start">
+            </div>
+            <div class="form-group ">
+                <label>章节分页结束</label>
+                <input type="text" class="form-control section_page_end "  name="section_page_end">
+            </div>
+            <div class="form-group ">
+                <label>章节分页正则</label>
+                <input type="text" class="form-control section_page_pattern " name="section_page_pattern">
+            </div>
+        </div>
+
+        <button type="button" class="btn btn-warning test" _type="section">小说章节采集测试</button><br/><br/>
+
+        <div class="form-group">
+            <label>内容开始</label>
+            <input type="text" class="form-control content_start"  name="content_start">
+        </div>
+        <div class="form-group">
+            <label>内容结束</label>
+            <input type="text" class="form-control content_end"  name="content_end">
+        </div>
+        <div class="form-group">
+            <label>内容正则</label>
+            <input type="text" class="form-control content_pattern" name="content_pattern">
+        </div>
+        <button type="button" class="btn btn-warning test" _type="content">小说任意章节内容采集测试</button><br/><br/>
+        <div class="alert alert-warning alert-dismissible " role="alert" style="display: none;">
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>
+            <strong>Holy guacamole!</strong>
+        </div>
+        <button type="button" class="btn btn-default submit">确定</button>
+    </form>
+    <input type="hidden" value="{$__CONTROLLER__}" class="CONTROLLER">
+
+</div>
+{block name="body"}
+<div class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document" style="width:80%;top:80px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" ><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title">采集测试</h4>
+            </div>
+            <div class="modal-body">
+                <p style="height: 269px;overflow-y:scroll">
+
+
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+{/block}
+{/block}
+
+{block name="javascript"}
+<script src="{$__PUBLIC__}/js/admin/gather/add.js"></script>
+{/block}
+
+
+

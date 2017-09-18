@@ -1,0 +1,58 @@
+{extends file="{$VIEW}/common/base.html"}
+{block name="title"}edit菜单{/block}
+{block name="css"}
+<link href="{$__PUBLIC__}/admin/menu/add.css" type="text/css" rel="stylesheet">
+{/block}
+
+{block name="content"}
+<div class="form">
+    <form>
+        <input type="hidden" class="form-control" name="id" value="{$nav.id}">
+        <div class="form-group">
+            <label>标题</label>
+            <input type="text" class="form-control" name="name" value="{$nav.name}">
+        </div>
+        <div class="form-group">
+            <label>排序</label>
+            <input type="text" class="form-control" value="0" name="order" value="{$nav.order}">
+        </div>
+        <div class="form-group">
+            <label>链接</label>
+            <input type="text" class="form-control" placeholder="model/controller/action" name="url" value="{$nav.url}">
+        </div>
+        <div class="btn-group">
+            <label>上级菜单</label><br/>
+            <select name="pid" class="form-control">
+                <option value="0" {if $nav.pid eq 0}checked{/if}>顶级菜单</option>
+                {foreach $hl as $v}
+                <option value="{$v.id}" {if $nav.pid eq $v.id}selected="selected"{/if} >{$v.name}</option>
+                {/foreach}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>分组</label>
+            <input type="text" class="form-control" placeholder="不填为默认分组" name="group" value="{$nav.group}">
+        </div>
+        <div class="form-group">
+            <label>是否隐藏</label>
+            <label class="radio-inline">
+                <input type="radio" name="is_hide" id="inlineRadio1" value="0" {if $nav.is_hide eq 0}checked{/if}> 0
+            </label>
+            <label class="radio-inline">
+                <input type="radio" name="is_hide" id="inlineRadio2" value="1" {if $nav.is_hide eq 1}checked{/if} > 1
+            </label>
+        </div>
+        <button type="button" class="btn btn-default submit">确定</button>
+    </form>
+    <input type="hidden" value="{$CONTROLLER}/add" class="url_hid">
+    <input type="hidden" value="{$__CONTROLLER__}" class="CONTROLLER">
+</div>
+
+{/block}
+
+{block name="javascript"}
+<script src="{$__PUBLIC__}/js/admin/menu/edit.js"></script>
+{/block}
+
+
+

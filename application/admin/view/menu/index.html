@@ -1,0 +1,49 @@
+{extends file="{$VIEW}/common/base.html"}
+{block name="title"}系统{/block}
+{block name="css"}
+<link href="{$__PUBLIC__}/admin/menu/index.css" type="text/css" rel="stylesheet">
+{/block}
+
+{block name="content"}
+    <div class="main">
+        <div class="btns">
+            <button type="button" class="btn btn-primary add">新增</button>
+        </div>
+        <div class="main-table">
+            <table class="table table-hover">
+                <tr>
+                    <th class="info">ID</th>
+                    <th class="info">名称</th>
+                    <th class="info">上级菜单</th>
+                    <th class="info">分组</th>
+                    <th class="info">URL</th>
+                    <th class="info">排序</th>
+                    <th class="info">隐藏</th>
+                    <th class="info">操作</th>
+                </tr>
+                {foreach $all_nav as $k=>$nav}
+                <tr>
+                    <td>{$nav.id}</td>
+                    <td>
+                        <a title="编辑" href="{$__CONTROLLER__}/subMenu/id/{$nav.id}">{$nav.name}</a>
+                    </td>
+                    <td>{$nav.pid}</td>
+                    <td>{$nav.group}</td>
+                    <td>{$nav.url}</td>
+                    <td>{$nav.order}</td>
+                    <td>{is_hide hide=$nav.is_hide id=$nav.id}</td>
+                    <td>
+                        <a title="编辑" href="{$__CONTROLLER__}/edit/id/{$nav.id}">编辑</a>
+                        <a title="删除" href="javascript:void(0)" class="del" _id="{$nav.id}">删除</a>
+                    </td>
+                </tr>
+                {/foreach}
+            </table>
+        </div>
+
+    </div>
+<input type="hidden" value="{$__CONTROLLER__}" class="CONTROLLER">
+{/block}
+{block name="javascript"}
+<script src="{$__PUBLIC__}/js/admin/menu/index.js"></script>
+{/block}

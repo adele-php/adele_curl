@@ -1,0 +1,84 @@
+{extends file="{$VIEW}/common/base.html"}
+{block name="title"}add菜单{/block}
+{block name="css"}
+<link href="{$__PUBLIC__}/admin/gather/config.css" type="text/css" rel="stylesheet">
+{/block}
+
+{block name="content"}
+
+<div class="form">
+    <form>
+
+        <div class="form-group">
+            <label>multiple数目(并行进程数)</label>
+            <input type="text" class="form-control multi"  name="multi">
+        </div>
+
+        <div class="radio">
+            <label>
+                <input type="radio" name="proxy" value="0" checked>
+                不开启代理
+            </label>
+        </div>
+        <div class="radio">
+            <label>
+                <input type="radio" name="proxy" value="1">
+                开启代理
+            </label>
+        </div>
+        <div class="proxy_info">
+            <div class="form-group ">
+                <label>proxyServer</label>
+                <input type="text" class="form-control proxyServer"  name="proxyServer">
+            </div>
+            <div class="form-group ">
+                <label>proxyUser</label>
+                <input type="text" class="form-control proxyUser "  name="proxyUser">
+            </div>
+            <div class="form-group ">
+                <label>proxyPass</label>
+                <input type="text" class="form-control proxyPass " name="proxyPass">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>cookie(用于模拟登录)</label>
+            <input type="text" class="form-control cookie"  name="cookie">
+        </div>
+
+
+        <button type="button" class="btn btn-default submit">确定</button>
+    </form>
+    <input type="hidden" value="{$__CONTROLLER__}" class="CONTROLLER">
+
+</div>
+{block name="body"}
+<div class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document" style="width:80%;top:80px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" ><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title">采集测试</h4>
+            </div>
+            <div class="modal-body">
+                <p style="height: 269px;overflow-y:scroll">
+
+
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+{/block}
+{/block}
+
+{block name="javascript"}
+<script src="{$__PUBLIC__}/js/admin/gather/config.js"></script>
+{/block}
+
+
+

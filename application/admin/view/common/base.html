@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    {block name="meta"}
+    <meta name="Author" content="丁馀峰">
+    <meta name="Keywords" content="adelephp">
+    <meta name="Description" content="">
+    {/block}
+
+    <title>{block name="title"}测试{/block}</title>
+
+    <link href="{$__PUBLIC__}/bootstrap/bootstrap.min.css" type="text/css" rel="stylesheet">
+    <link href="{$__PUBLIC__}/css/base.css" type="text/css" rel="stylesheet">
+    <script src="{$__PUBLIC__}/js/jq3.2.1.js"></script>
+    {block name="css"}{/block}
+
+
+</head>
+<body>
+{block name="header"}
+<header class="navbar navbar-default">
+    <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+                    data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">AdelePHP</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav">
+                {foreach $navs as $nav}
+                <li {if $nav.active eq 1}class="active"{/if} ><a href="{$nav.url}">{$nav.name}</a></li>
+                {/foreach}
+                <!--<li class="active"><a href="#">首页</a></li>-->
+                <!--<li><a href="#">系统</a></li>-->
+            </ul>
+            {block name=search}
+            <form class="navbar-form navbar-left" method="get" action="">
+                <div class="form-group">
+                    <input type="text" class="form-control" placeholder="Search">
+                </div>
+                <button type="submit" class="btn btn-default">搜索</button>
+            </form>
+            {/block}
+
+            <ul class="nav navbar-nav navbar-right">
+                <li><a href="#">adele</a></li>
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
+                       aria-expanded="false"> <span class="glyphicon glyphicon-user"></span></a>
+                    <ul class="dropdown-menu">
+                        <li><a href="#">修改密码</a></li>
+                        <li><a href="#">修改昵称</a></li>
+                        <li role="separator" class="divider"></li>
+                        <li><a href="#">登出</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+    <!-- /.container-fluid -->
+</header>
+<div class="handle-bug"></div>
+{/block}
+
+{block name="sidebar"}
+<div class="sidebar">
+    {foreach $left_navs as $group => $left_nav}
+    <h3 class="subnav">
+        <p class="gly"><span class="glyphicon glyphicon-minus"></span><span>{$group}</span></p>
+        <ul>
+            {foreach $left_nav as $v}
+            <li {if $v.active eq 1}class="active"{/if} ><a href="{$v.url}">{$v.name}</a></li>
+            {/foreach}
+
+        </ul>
+    </h3>
+    {/foreach}
+
+    <!--<h3 class="subnav">-->
+        <!--<p class="gly"><span class="glyphicon glyphicon-minus"></span><span>列表2</span></p>-->
+        <!--<ul>-->
+            <!--<li><a href="#">lalala</a></li>-->
+            <!--<li><a href="#">lalala</a></li>-->
+        <!--</ul>-->
+    <!--</h3>-->
+</div>
+{/block}
+
+{block name="body"}{/block}
+<div class="content">
+    <div class="con_main">
+        {block name="content"}{/block}
+    </div>
+</div>
+<footer>
+    <div class="copyright">©2017 iadele.cn iadele版权所有</div>
+</footer>
+<script src="{$__PUBLIC__}/bootstrap/bootstrap.min.js"></script>
+<script src="{$__PUBLIC__}/js/base.js"></script>
+{block name="javascript"}{/block}
+
+
+</body>
+</html>

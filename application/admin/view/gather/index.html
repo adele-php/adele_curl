@@ -1,0 +1,43 @@
+{extends file="{$VIEW}/common/base.html"}
+{block name="title"}系统{/block}
+{block name="css"}
+<link href="{$__PUBLIC__}/admin/menu/index.css" type="text/css" rel="stylesheet">
+{/block}
+
+{block name="content"}
+    <div class="main">
+        <div class="btns">
+            <button type="button" class="btn btn-primary add">新增</button>
+        </div>
+        <div class="main-table">
+            <table class="table table-hover">
+                <tr>
+                    <th class="info">ID</th>
+                    <th class="info">书籍详情链接</th>
+                    <th class="info">是否为模板</th>
+                    <th class="info">编码</th>
+                    <th class="info">操作</th>
+                </tr>
+                {foreach $gather as $k=>$v}
+                <tr>
+                    <td>{$v.id}</td>
+                    <td>{$v.detail_url}</td>
+                    <td><a class='setTemplet' href="javascript:void(0)" _href="{$__CONTROLLER__}/setTemplet" _id="{$v.id}" _val="{$v.templet}">{num2str num=$v.templet}</a></td>
+                    <td>{$v.iconv}</td>
+
+                    <td>
+                        <a title="编辑" href="{$__CONTROLLER__}/edit/id/{$v.id}" >编辑</a>
+                        <a title="删除" href="javascript:void(0)" class="del" _id="{$v.id}">删除</a>
+                        <a title="删除" href="{$__CONTROLLER__}/gather/id/{$v.id}" >采集</a>
+                    </td>
+                </tr>
+                {/foreach}
+            </table>
+        </div>
+
+    </div>
+<input type="hidden" value="{$__CONTROLLER__}" class="CONTROLLER">
+{/block}
+{block name="javascript"}
+<script src="{$__PUBLIC__}/js/admin/gather/index.js"></script>
+{/block}
