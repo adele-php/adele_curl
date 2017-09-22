@@ -74,11 +74,6 @@ class Gather extends \resource\Controller{
     }
 
 
-
-
-
-
-
     public function gather($id){
         set_time_limit(0);                      //设置程序不超时
         ini_set('max_execution_time',0 );       //设置程序不超时

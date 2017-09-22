@@ -6,6 +6,7 @@ namespace resource\adele;
  */
 class GatherView{
 
+    //浏览器输出数据
 	public static function info($select,$info){
 
         $str = '<div class="js"><script>';

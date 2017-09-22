@@ -12,13 +12,13 @@ class Db{
         // 数据库类型
         'type'            => 'mysql',
         // 服务器地址
-        'host'        => 'localhost',
+        'host'        => '192.168.18.121',
         // 数据库名
-        'database'        => 'adelephp',
+        'database'        => 'test',
         // 用户名
         'username'        => 'root',
         // 密码
-        'password'        => 'root',
+        'password'        => 'wowoyoo',
         // 端口
         'port'        => '3306',
         // 数据库连接参数

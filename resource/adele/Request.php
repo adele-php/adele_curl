@@ -2,8 +2,6 @@
 
 
 namespace resource\adele;
-
-
 use resource\Config;
 
 class Request{
@@ -27,6 +25,7 @@ class Request{
     //处理响应
     public function handle(){
         $mca = $this->path()->mca();
+
 //        var_dump( $mca);exit;
         define('MODEL_NAME',$mca[0]);
         define('CONTROLLER_NAME',$mca[1]);
@@ -113,6 +112,63 @@ class Request{
         }
         return $p;
     }
+
+    /**
+     * Parse command.
+     * php yourfile.php id
+     *
+     * @return void
+     */
+    public static function parseCommand(){
+        // 检查运行命令的参数
+        global $argv;
+        $command = $argv[1];
+
+        switch($command) {
+            // 启动 phpspider
+            case 'start':
+                // TODO
+                break;
+//            case 'stop':
+//                exec("ps aux | grep $start_file | grep -v grep | awk '{print $2}'", $info);
+//                if (count($info) <= 1) {
+//                    echo "PHPSpider[$start_file] not run\n";
+//                } else {
+//                    //echo "PHPSpider[$start_file] is stoping ...\n";
+//                    echo "PHPSpider[$start_file] stop success";
+//                    exec("ps aux | grep $start_file | grep -v grep | awk '{print $2}' |xargs kill -SIGINT", $info);
+//                }
+//                exit;
+//                break;
+//            case 'kill':
+//                exec("ps aux | grep $start_file | grep -v grep | awk '{print $2}' |xargs kill -SIGKILL");
+//                break;
+//            // 显示 phpspider 运行状态
+//            case 'status':
+//                exit(0);
+//            // 未知命令
+//            default :
+//                exit("Usage: php yourfile.php {start|stop|status|kill}\n");
+        }
+
+    }
+
+
+    //清屏
+    public static function clearEcho(){
+        $arr = array(27, 91, 72, 27, 91, 50, 74);
+        foreach ($arr as $a) {
+            print chr($a);
+        }
+    }
+
+
+
+
+
+
+
+
 
 
 

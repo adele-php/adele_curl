@@ -62,8 +62,11 @@ class Mysql{
     }
 
     public function connection( $config ){
+        $start = microtime();
         $dsn = $this->parseDsn($config);
-        new \PDO($dsn, $config['username'], $config['password'], $options);
+        new \PDO($dsn, $config['username'], $config['password']);
+        $connect_time = microtime() -$start;
+        return $connect_time;
     }
 
 
