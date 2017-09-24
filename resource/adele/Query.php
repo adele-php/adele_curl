@@ -34,6 +34,23 @@ class Query{
         return $result;
     }
 
+    //返回单一数据
+    public function find($data=true){
+        $field = isset($this->field)?$this->field:'*';
+        $table = isset($this->table)?$this->table:'false';          //表不存在
+        if(!empty($this->where) ){
+            $this->where = ' WHERE '.$this->where;
+        }
+
+        $sql='SELECT '.$field.' FROM '.$table.$this->where.' limit 1';
+        if( $data===false ){
+            return $sql;
+        }
+        $this->_exec( $sql );
+        $result = $this->pso->fetchAll();
+        return $result[0];
+    }
+
     /*
      * 修改 $condition=[ 'id'=>1  ]
      */

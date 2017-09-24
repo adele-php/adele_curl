@@ -36,21 +36,28 @@ class Controller extends \Smarty{
             ->select();
 
         if( !$now ){
-            @$refer_url = $_SERVER['HTTP_REFERER'];
-            $mca = \resource\adele\Request::instance()->mca(parse_url($refer_url)['path'],false);
-            $mca = $mca[0].'/'.$mca[1].'/'.$mca[2];
+//            @$refer_url = $_SERVER['HTTP_REFERER'];
+//            $mca = \resource\adele\Request::instance()->mca(parse_url($refer_url)['path'],false);
+//            $mca = $mca[0].'/'.$mca[1].'/'.$mca[2];
+            $mc = MODEL_NAME.'/'.CONTROLLER_NAME;
             $now = M('nav')->field('id,pid')
-//            ->where('is_hide=0 and url like "%'.$mca.'%"')
-                ->where('is_hide=0 and url="'.$mca.'"')
+                ->where('is_hide=0 and url like "'.$mc.'%"')
+//                ->where('is_hide=0 and url="'.$mca.'"')
                 ->select();
+
+            if(!$now){
+                die('nav 获取不到');
+            }
         }
 
+        $active_id = [];
         //需要高亮的id
-        if(@$now[0]['pid'] == 0 ){
-            @$active_id=[$now[0]['id']];
-        }else{
-            @$active_id=[$now[0]['id'],$now[0]['pid']];
+        foreach($now as $nav){
+            $active_id[] = $nav['id'];
+            //不是顶级id执行后半段
+            ($nav['pid']==0) || $active_id[] = $nav['pid'];
         }
+        array_unique($active_id);
 
 
         $navs = M('nav')->field('id,name,url,order,pid,group')

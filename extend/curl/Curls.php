@@ -1,16 +1,16 @@
 <?php
 
-require_once 'Get.php';
+require_once 'CurlCommon.php';
 /**
  * CURL 类
  */
-class Curls extends Get{
+class Curls extends CurlCommon{
     const CURL_NUM=10;
-    private $__multi_curl_handle;
-    private $__curl_handles = [];
+    private $multi_curl_handle;
+    private $curl_handles = [];
 
     public function __construct($other_opts=array()){
-        $this->__multi_curl_handle = curl_multi_init();
+        $this->multi_curl_handle = curl_multi_init();
 
         for($i=1;$i<=self::CURL_NUM;$i++){
             $curl_handle = curl_init();
@@ -21,19 +21,19 @@ class Curls extends Get{
             ];
             curl_setopt_array($curl_handle,$opts);
             curl_setopt_array($curl_handle,$other_opts);
-            $this->__curl_handles[]=$curl_handle;
+            $this->curl_handles[]=$curl_handle;
         }
     }
 
     public function run($urls){
         // TODO $urls > CURL_NUM
 
-        $res = $this->_curls($urls);
+        $res = $this->curls($urls);
         return $res;
     }
 
 
-    protected function _curls($urls){
+    protected function curls($urls){
         $key       = 0;
         $map       = array();
         $responses = array();
@@ -41,24 +41,24 @@ class Curls extends Get{
         //设置url
         while( null !== $url = array_pop($urls)){
 
-            curl_setopt($this->__curl_handles[$key],CURLOPT_URL,$url );
+            curl_setopt($this->curl_handles[$key],CURLOPT_URL,$url );
             // 把当前 curl resources 加入到 curl_multi_init 队列
-            curl_multi_add_handle($this->__multi_curl_handle, $this->__curl_handles[$key]);
+            curl_multi_add_handle($this->multi_curl_handle, $this->curl_handles[$key]);
 
             $map[$url]=$key;
             $key++;
         }
 
         //执行采集
-        $this->__execMultipleCurl();
+        $this->execMultipleCurl();
         //获取数据
         foreach($map as $url => $k){
             //TODO 错误处理
-            $this->_httpCodeHandle($this->__curl_handles[$k],$url);
+            $this->httpCodeHandle($this->curl_handles[$k],$url);
 
 
-            $responses[$url] = curl_multi_getcontent($this->__curl_handles[$k]);
-            curl_multi_remove_handle($this->__multi_curl_handle, $this->__curl_handles[$k]);
+            $responses[$url] = curl_multi_getcontent($this->curl_handles[$k]);
+            curl_multi_remove_handle($this->multi_curl_handle, $this->curl_handles[$k]);
         }
 
 
@@ -66,19 +66,19 @@ class Curls extends Get{
 
     }
 
-    private function __execMultipleCurl(){
+    private function execMultipleCurl(){
         $active = null;
         do {
-            $mrc = curl_multi_exec($this->__multi_curl_handle, $active);
+            $mrc = curl_multi_exec($this->multi_curl_handle, $active);
         } while ($mrc == CURLM_CALL_MULTI_PERFORM);
 
         while ($active > 0 && $mrc == CURLM_OK) {
-            while (curl_multi_exec($this->__multi_curl_handle, $active) === CURLM_CALL_MULTI_PERFORM);
+            while (curl_multi_exec($this->multi_curl_handle, $active) === CURLM_CALL_MULTI_PERFORM);
             // 这里 curl_multi_select 一直返回 -1，所以这里就死循环了，CPU就100%了
-            if (curl_multi_select($this->__multi_curl_handle, 0.5) != -1)
+            if (curl_multi_select($this->multi_curl_handle, 0.5) != -1)
             {
                 do {
-                    $mrc = curl_multi_exec($this->__multi_curl_handle, $active);
+                    $mrc = curl_multi_exec($this->multi_curl_handle, $active);
                 } while ($mrc == CURLM_CALL_MULTI_PERFORM);
             }
         }

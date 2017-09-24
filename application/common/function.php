@@ -59,10 +59,18 @@ function U($url='',$vars='',$suffix=true) {
 
 
 
-//admin模块函数
+//查找extend目录下的文件
+function vendor($class) {
+
+    $filepath = EXTEND_PATH.$class.EXT;
+    if( is_file(  $filepath )  ){
+        require_once($filepath);
+    }else{
+        return false;
+    }
 
 
-
+}
 
 
 
