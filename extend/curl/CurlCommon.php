@@ -45,15 +45,29 @@ class CurlCommon {
             CURLOPT_USERAGENT=>"Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/28.0.1500.95Safari/537.36 SE 2.X MetaSr 1.0",
             CURLOPT_CONNECTTIMEOUT=>3,
             CURLOPT_TIMEOUT=>5,
-            CURLOPT_PROXY=>$this->$proxy_info['proxyServer'],
-            CURLOPT_PROXYUSERPWD=> "{$this->$proxy_info['proxyUser']}:{$this->$proxy_info['proxyPass']}",
+            CURLOPT_PROXY=>$this->$proxy_info['proxy_server'],
+            CURLOPT_PROXYUSERPWD=> "{$this->$proxy_info['proxy_username']}:{$this->$proxy_info['proxy_password']}",
         ];
-        curl_setopt_array($ch,$opts);
+        if(is_array($ch)){
+            foreach($ch as $v){
+                curl_setopt_array($v,$opts);
+            }
+        }else{
+            curl_setopt_array($ch,$opts);
+        }
+
     }
 
     //模拟登录
     public function setCookie($ch,$cookie){
-        curl_setopt($ch,CURLOPT_COOKIE,$cookie);
+        if(is_array($ch)){
+            foreach($ch as $v){
+                curl_setopt($v,CURLOPT_COOKIE,$cookie);
+            }
+        }else{
+            curl_setopt($ch,CURLOPT_COOKIE,$cookie);
+        }
+
 
     }
 

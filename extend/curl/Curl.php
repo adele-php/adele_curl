@@ -60,6 +60,9 @@ class Curl extends CurlCommon{
         return $result;
     }
 
+    public function getHandle(){
+        return $this->ch;
+    }
 
 
 }

@@ -8,6 +8,12 @@ use resource\adele\GatherView;
  * 爬虫模块
  */
 class Novel extends Spider{
+    //小说
+    const DETAIL_GATHER =1;             //详情采集
+    const SECTION_GATHER=2;             //章节采集
+    const CONTENT_GATHER=3;             //内容采集
+
+
     public function __construct( $config ){
         $this->_iniConfig($config);
 
@@ -20,9 +26,11 @@ class Novel extends Spider{
             'thread_num'=>1,//线程数
             'proxy'=>[
                 'proxy_status'=>0,      //是否开启代理
-                'proxy_server'=>null,
-                'proxy_username'=>null,
-                'proxy_password'=>null,
+                'proxy_info'=>[
+                    'proxy_server'=>null,
+                    'proxy_username'=>null,
+                    'proxy_password'=>null,
+                ]
             ],
             'cookie'=>null,
             'novel' =>[
@@ -31,7 +39,9 @@ class Novel extends Spider{
                 'end'=>    ['detail_end'=>'',    'section_end'=>'',    'content_end'=>''],
                 'pattern'=>['detail_pattern'=>[],'section_pattern'=>'','content_pattern'=>''],
                 'detail_page'=>['start'=>'','end'=>'','pattern'=>''],          //章节分页
-            ]
+            ],
+            'type'=>'normal',   //   normal正常采集  |  test采集测试
+            'test'=>self::DETAIL_GATHER,   // DETAIL_GATHER|SECTION_GATHER|CONTENT_GATHER
         ];
 
         $this->config = array_merge($default_config,$config);

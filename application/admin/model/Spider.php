@@ -18,18 +18,13 @@ class Spider extends Model{
 
     //***************常量*************************
     const NOVEL=-1;
-    //小说
-    const SECTION_GATHER=1;             //章节采集
-    const CONTENT_GATHER=2;             //内容采集
-    const DETAIL_GATHER =3;             //详情采集
+
 
 
 
 	public function __construct(){
         parent::__construct();
         $this->init();                    //初始化curl
-        $this->_proxy();                   //设置代理
-        $this->_setCookie();
 	}
 
     private function init(){
@@ -42,69 +37,18 @@ class Spider extends Model{
             $this->engine = new \Curl();
         }
 
+        $handle = $this->engine->getHandle();
+        //设置代理
+        if( $this->config['proxy']['status']==1 ){
+            $this->engine->setProxy($handle,$this->config['proxy']['proxy_info']);
+        }
+        //设置cookie 模拟登陆
+        if( !empty($this->config['cookie']) ){
+            $this->engine->setCookie($handle,$this->config['cookie']);
+        }
     }
 
 
-    private function _proxy(){
-        if( $this->config['proxy']==0 ){
-            return;
-        }
-        // 隧道身份信息
-//        $proxyServer='http://proxy.abuyun.com:9020';
-//        $proxyUser   = "HAR45CEF4S7N2B5D";
-//        $proxyPass   = "BA9C4024D5ED689E";
-
-        $opts = [
-            CURLOPT_PROXYTYPE=>CURLPROXY_HTTP,
-            CURLOPT_PROXYAUTH=>CURLAUTH_BASIC,
-            CURLOPT_USERAGENT=>"Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/28.0.1500.95Safari/537.36 SE 2.X MetaSr 1.0",
-            CURLOPT_CONNECTTIMEOUT=>3,
-            CURLOPT_TIMEOUT=>5,
-            CURLOPT_PROXY=>$this->config['proxyServer'],
-            CURLOPT_PROXYUSERPWD=> "{$this->config['proxyUser']}:{$this->config['proxyPass']}",
-        ];
-        if( $this->config['multi']==1){
-            foreach( $this->chs as $ch){
-                curl_setopt_array($ch,$opts);
-            }
-        }
-        curl_setopt_array($this->ch,$opts);
-
-        /*
-        // 设置代理服务器
-        curl_setopt($ch, CURLOPT_PROXYTYPE, CURLPROXY_HTTP);
-        curl_setopt($ch, CURLOPT_PROXY, $proxyServer);
-
-        // 设置隧道验证信息
-        curl_setopt($ch, CURLOPT_PROXYAUTH, CURLAUTH_BASIC);
-        curl_setopt($ch, CURLOPT_PROXYUSERPWD, "{$proxyUser}:{$proxyPass}");
-
-        curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/28.0.1500.95Safari/537.36 SE 2.X MetaSr 1.0");
-
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-        */
-
-    }
-
-    private function _setCookie(){
-        if(empty($this->config['cookie'])){
-            return ;
-        }
-        if( $this->config['multi']==1){
-            foreach( $this->chs as $ch){
-                curl_setopt($ch,CURLOPT_COOKIE,$this->config['cookie']);
-            }
-        }
-        curl_setopt($this->ch,CURLOPT_COOKIE,$this->config['cookie']);
-
-    }
-
-
-
-    private function _errorHandle(){
-
-    }
 
     public function getConfig($type){
         $config=[];

@@ -5,7 +5,7 @@ require_once 'CurlCommon.php';
  * CURL 类
  */
 class Curls extends CurlCommon{
-    const CURL_NUM=10;
+    const CURL_NUM=5;                   //并发数 设置代理最大为5
     private $multi_curl_handle;
     private $curl_handles = [];
 
@@ -84,5 +84,9 @@ class Curls extends CurlCommon{
         }
     }
 
+
+    public function getHandle(){
+        return $this->curl_handles;
+    }
 }
 
