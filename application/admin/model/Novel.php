@@ -42,23 +42,131 @@ class Novel extends Spider{
             ],
             'type'=>'normal',   //   normal正常采集  |  test采集测试
             'test'=>self::DETAIL_GATHER,   // DETAIL_GATHER|SECTION_GATHER|CONTENT_GATHER
+            'iconv'=>'utf-8',
         ];
 
         $this->config = array_merge($default_config,$config);
     }
 
     public function run(){
+        //设置采集开始时间
         GatherView::info('.start_time',date('Y-m-d H:i:s',time()));
-        switch($this->config['type']){
-            case self::NOVEL:       //小说类型
-                $this->_gatherNovel();
-                break;
 
-            case 'default':
-                $content = $this->_curl('http://www.iadele.cn/index.php/Admin/Index/index.html');
-                var_dump($content);
-        }
+        //采集小说详情
+        $this->novelDetail();
+
+        //采集小说章节链接
+
+        //采集小说内容
+
+
     }
+
+    //采集小说详情
+    public function novelDetail(){
+        $detailConfig = $this->parseConfig('detail');
+        $result = [];
+
+        //得到详情页内容 TODO
+        $content = $this->engine->run($detailConfig['url']);
+        //网页内容进行 转码+截断
+        $content = $this->contentHandle($detailConfig['start'][0],$detailConfig['end'][0],$content,$this->config['iconv']);
+        //匹配信息
+        foreach($detailConfig['pattern'] as $k=>$pattern){
+            $str = $this->substr($content,$detailConfig['start'][$k],$detailConfig['end'][$k]);
+            preg_match($pattern,$str,$res);
+            // TODO 匹配失败
+
+            $result[$k]=$res[1];
+        }
+        return $result;
+    }
+
+    public function parseConfig($type){
+        $config=[];
+        switch($type){
+            case 'detail':
+                /*  数据库字段名:正则
+                detail_pattern
+                    name:/<em>(.*)<\/em>/U;
+                    author:/<span><a href=.*>(.*)<\/a>/U;
+                    img:/<img src="(.*)">/U;
+                    desc:/<p class="intro">(.*)/;
+
+                detail_start | detail_end
+                    <div class="detail">;
+                    name:<h1>;
+                    author:<h1>;
+                    img:<div class="book-img">;
+                    desc:<p class="intro">;
+                */
+                $config = [
+                    'url'    =>$this->config['novel']['url']['detail_url'],
+                    'start'  =>[],
+                    'end'    =>[],
+                    'pattern'=>[],
+                ];
+                //字符串按 \r\n或; 分割成数组，并将数组中值为false的过滤
+                $pattern = array_filter(preg_split('/[;\r\n]+/s',$this->config['novel']['pattern']['detail_pattern']));
+                $start = array_filter(preg_split('/[;\r\n]+/s',$this->config['novel']['start']['detail_start']));
+                $end = array_filter(preg_split('/[;\r\n]+/s',$this->config['novel']['end']['detail_end']));
+
+                //pattern
+                foreach( $pattern as $val ){
+                    $p = explode(':',$val);
+                    $key = array_shift($p);
+                    $config['pattern'][$key] = implode('',$p);
+                }
+
+                //start
+                $config['start'][0]=array_shift($start);
+                foreach( $start as $val ){
+                    $s = explode(':',$val);
+                    $key = array_shift($s);
+                    $config['start'][$key] = implode('',$s);
+                }
+
+                //end
+                $config['end'][0]=array_shift($end);
+                foreach( $end as $val ){
+                    $s = explode(':',$val);
+                    $key = array_shift($s);
+                    $config['start'][$key] = implode('',$s);
+                }
+
+                // TODO 判断配置是否正确(数量)
+
+                break;
+            case 'section':
+                $config = [
+                    'url'    =>$this->config['novel']['url']['section_url'],
+                    'start'  =>$this->config['novel']['start']['section_start'],
+                    'end'    =>$this->config['novel']['end']['section_end'],
+                    'pattern'=>$this->config['novel']['pattern']['section_pattern'],
+                ];
+                if( isset($this->config['novel']['detail_page']) ){
+                    $config['detail_page'] = $this->config['novel']['detail_page']
+                }
+                break;
+            case 'content':
+                $config = [
+                    'url'    =>$this->config['novel']['url']['content_url'],
+                    'start'  =>$this->config['novel']['start']['content_start'],
+                    'end'    =>$this->config['novel']['end']['content_end'],
+                    'pattern'=>$this->config['novel']['pattern']['content_pattern']
+                ];
+                break;
+        }
+        return $config;
+    }
+
+
+
+    //***********************没用到********************************
+
+
+
+
 
 
     /*
@@ -111,18 +219,7 @@ class Novel extends Spider{
         }
     }
 
-    //采集小说详情
-    public function novelDetail(){
-        $detailConfig = $this->getConfig('detail');
-        $result = [];
-        $content = $this->_gatherHandle($detailConfig['url'],$detailConfig['start'][0],$detailConfig['end'][0],$this->config['iconv']);
-        foreach($detailConfig['pattern'] as $k=>$pattern){
-            $str = $this->_substr($content,$detailConfig['start'][$k],$detailConfig['end'][$k]);
-            preg_match($pattern,$str,$res);
-            $result[$k]=$res[1];
-        }
-        return $result;
-    }
+
 
     //采集小说章节
     public function novelSection(){

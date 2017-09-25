@@ -37,102 +37,45 @@ class Spider extends Model{
             $this->engine = new \Curl();
         }
 
+        //得到curl句柄
         $handle = $this->engine->getHandle();
+
         //设置代理
         if( $this->config['proxy']['status']==1 ){
             $this->engine->setProxy($handle,$this->config['proxy']['proxy_info']);
         }
+
         //设置cookie 模拟登陆
         if( !empty($this->config['cookie']) ){
             $this->engine->setCookie($handle,$this->config['cookie']);
         }
+
     }
 
 
 
-    public function getConfig($type){
-        $config=[];
-        switch($type){
-            case 'detail':
-                $config = [
-                    'url'    =>$this->config['novel']['url']['detail_url'],
-                    'start'  =>$this->config['novel']['start']['detail_start'],
-                    'end'    =>$this->config['novel']['end']['detail_end'],
-                    'pattern'=>$this->config['novel']['pattern']['detail_pattern']
-                ];
-                $config = $this->_parseConfig($config);
-                break;
-            case 'section':
-                $config = [
-                    'url'    =>$this->config['novel']['url']['section_url'],
-                    'start'  =>$this->config['novel']['start']['section_start'],
-                    'end'    =>$this->config['novel']['end']['section_end'],
-                    'pattern'=>$this->config['novel']['pattern']['section_pattern'],
-                    'children'=>isset($this->config['novel']['children'])?$this->config['novel']['children']:[],
-                ];
-                break;
-            case 'content':
-                $config = [
-                    'url'    =>$this->config['novel']['url']['content_url'],
-                    'start'  =>$this->config['novel']['start']['content_start'],
-                    'end'    =>$this->config['novel']['end']['content_end'],
-                    'pattern'=>$this->config['novel']['pattern']['content_pattern']
-                ];
-                break;
-        }
-        return $config;
-    }
-    private function _parseConfig($config){
-        foreach( $config['pattern'] as $k=>$pattern){
-            $patterns = explode(':',$pattern);
-            $key=array_shift($patterns);
-            $key_len = strlen($key)+1;
-            $pattern = implode('',$patterns);
-
-            unset($config['pattern'][$k]);
-            $config['pattern'][$key]=$pattern;
-
-            $config['start'][$key] = substr($config['start'][$k+1],$key_len);
-            unset($config['start'][$k+1]);
-
-            $config['end'][$key] = substr($config['end'][$k+1],$key_len);
-            unset($config['end'][$k+1]);
-
-        }
-        return $config;
-    }
 
 
 
-    private function _gatherHandle($url,$start,$end,$iconv=null){
-        if(is_array($url)){
-            $contents = $this->_multipleCurl($url);
 
-            foreach($contents as $url=>$content){
-                $contents[$url] = $this->_convertEncode($content,$iconv);              //改变编码
-                $contents[$url] = $this->_substr($content,$start,$end);
-            }
-            $content = $contents;
-        }else{
-            $content = $this->_curl($url);
-            $content = $this->_convertEncode($content,$iconv);              //改变编码
-            $content = $this->_substr($content,$start,$end);
-        }
+    protected function contentHandle($start,$end,$content,$iconv=null){
+        $content = $this->convertEncode($content,$iconv);              //改变编码
+        $content = $this->substr($content,$start,$end);
 
         return $content;
     }
 
-    private function _substr($str , $start,$end){
+    protected function substr($str,$start,$end){
         $start_pos = strpos($str,$start);
         $end_pos   = strpos($str,$end,$start_pos);
         return substr($str,$start_pos,$end_pos-$start_pos);
     }
 
-    /*
+   /*
    * 将编码转变为UTF-8  ,默认自动识别
    * 识别不到 return false
    */
-    private function _convertEncode( $str,$now_encode = null  ){
+    private function convertEncode( $str,$now_encode = null  ){
         if( $now_encode == 'utf-8'){
             return $str ;
         }
@@ -142,6 +85,16 @@ class Spider extends Model{
         $str = $now_encode?mb_convert_encoding($str ,'utf-8',$now_encode):false;
         return $str ;
     }
+
+
+
+
+
+
+
+
+    //*****************没用到**************************
+
 
     private function _curl($url ){
         $key = $this->_linkStorage($url);
@@ -190,25 +143,7 @@ class Spider extends Model{
 
         return $result;
     }
-    /*
-     * 本次采集的所有url信息
-     * array(
-     *  'urls'=> array(0=>'xxx.html',.....,???=>'xxx9999.html')
-     *   'num'=> array( url_key=>1  )
-     * )
-     * */
-    private function _linkStorage( $url ){
 
-        if( ($key = array_search( $url , $this->link['urls'] )) !== false  ){
-            $this->link['num'][$key] +=1 ;
-        }else{
-            $this->link['urls'][] = $url;
-            $key = array_search( $url , $this->link['urls'] );
-            $this->link['num'][$key]=1;
-        }
-        return $key;
-
-    }
     /*
      * curl_multi_exec
         第一个循环， $mrc == CURLM_CALL_MULTI_PERFORM（-1）表明了还有句柄资源没有处理，于是就继续$mrc = curl_multi_exec($mh, $active)
@@ -309,7 +244,7 @@ class Spider extends Model{
     }
 
     //将相对路径变为绝对路径
-    private function _handleUrl( $now_url ,$son_url ){
+    protected function handleUrl( $now_url ,$son_url ){
 
         preg_match('/^http/',$son_url,$res);
         if( !$res ){

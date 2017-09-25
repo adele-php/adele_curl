@@ -25,10 +25,19 @@ class Curls extends CurlCommon{
         }
     }
 
+    /*
+     *
+     */
     public function run($urls){
+
         // TODO $urls > CURL_NUM
 
         $res = $this->curls($urls);
+
+        // TODO
+        if( !is_array($urls) ){
+
+        }
         return $res;
     }
 
