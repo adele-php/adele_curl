@@ -16,23 +16,28 @@ class CurlCommon {
     public $link=['urls'=>[], 'info'=>[]];
     public $queue=[];
 
-    //入队列
-    public function enqueue($url){
-        if(is_array($url)){
-            foreach($url as $v){
-                $this->queue[]=$url;
+    /*
+     * 入队列
+     * url_info
+     *      'url'=>
+     *      other..
+     */
+    public function enqueue($url_info,$is_batch=false){
+        if($is_batch==true){
+            foreach($url_info as $v){
+                $this->queue[]=$v;
             }
         }else{
-            $this->queue[]=$url;
+            $this->queue[]=$url_info;
         }
     }
 
     //出队列
     public function dequeue(){
-        $url = array_shift($this->queue);
-        $url = empty($url)?false:$url;
+        $url_info = array_shift($this->queue);
+        $url_info = empty($url_info)?false:$url_info;
 
-        return $url;
+        return $url_info;
     }
 
 

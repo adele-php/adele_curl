@@ -41,7 +41,7 @@ class Novel extends Spider{
                 'detail_page'=>['start'=>'','end'=>'','pattern'=>''],          //章节分页
             ],
             'type'=>'normal',   //   normal正常采集  |  test采集测试
-            'test'=>self::DETAIL_GATHER,   // DETAIL_GATHER|SECTION_GATHER|CONTENT_GATHER
+            'test'=>null,   // DETAIL_GATHER|SECTION_GATHER|CONTENT_GATHER
             'iconv'=>'utf-8',
         ];
 
@@ -52,14 +52,52 @@ class Novel extends Spider{
         //设置采集开始时间
         GatherView::info('.start_time',date('Y-m-d H:i:s',time()));
 
+        //采集测试
+        if(!empty($this->config['test'])){
+            return $this->gatherCheckout($this->config['test']);
+        }
+
         //采集小说详情
-        $this->novelDetail();
+        $detail_info = $this->novelDetail();
 
-        //采集小说章节链接
+        //采集小说章节链接 return ['url'=>[],'title'=>[]]
+        $section_info = $this->novelSection();
+        //章节链接入队列
+        foreach($section_info['url'] as $k=>$url){
+            $url = $this->handleUrl($this->config['novel']['url']['section_url'],$url);
+            $url_info = ['url'=>$url,'title'=>$section_info['title'][$k]];
+            $this->engine->enqueue($url_info);
+        }
 
-        //采集小说内容
+        //采集小说内容 return ['url'=>,'title'=>[],'content'=>[]]
+        $content_info = $this->novelContent();
 
+    }
 
+    //采集测试
+    public function gatherCheckout($gather_type){
+        switch($gather_type){
+            case self::DETAIL_GATHER:
+                $info = $this->novelDetail();
+                break;
+            case self::SECTION_GATHER:
+                $info = $this->novelSection();
+                break;
+            case self::CONTENT_GATHER:
+                //所有章节链接 标题
+                $section  = $this->novelSection();
+                //随机key
+                $rand_key = mt_rand(0,count($section['url']));
+                $url = $this->handleUrl($this->config['novel']['url']['section_url'],$section['url'][$rand_key]);
+                $url_info = ['url'=>$url,'title'=>$section['title'][$rand_key]];
+
+                $this->engine->enqueue($url_info);
+                $info = $this->novelContent();
+                break;
+            default:
+                $info = false;
+        }
+        return $info;
     }
 
     //采集小说详情
@@ -69,7 +107,7 @@ class Novel extends Spider{
 
         //得到详情页内容 TODO
         $content = $this->engine->run($detailConfig['url']);
-        //网页内容进行 转码+截断
+        //网页内容进行 转码+截取
         $content = $this->contentHandle($detailConfig['start'][0],$detailConfig['end'][0],$content,$this->config['iconv']);
         //匹配信息
         foreach($detailConfig['pattern'] as $k=>$pattern){
@@ -81,6 +119,60 @@ class Novel extends Spider{
         }
         return $result;
     }
+
+    //采集小说章节
+    public function novelSection(){
+        $result = ['url'=>[],'title'=>[]];
+        $sectionConfig = $this->parseConfig('section');
+
+        //得到章节页内容
+        $content = $this->engine->run($sectionConfig['url']);
+
+        //存在分页
+        if(!empty($sectionConfig['detail_page'])){
+            //得到分页链接
+            $page_content = $this->contentHandle($sectionConfig['detail_page']['start'],$sectionConfig['detail_page']['end'],$content,$this->config['iconv']);
+            preg_match_all($sectionConfig['detail_page']['pattern'],$page_content,$page_url);
+            //分页处理
+            foreach($page_url[1] as $u){
+                $sectionConfig['url'] = $this->handleUrl($sectionConfig['url'],$u);
+                $res = $this->gatherSection($sectionConfig);
+                $result['url']=array_merge($result['url'],$res['url']);
+                $result['title']=array_merge($result['title'],$res['title']);
+            }
+        }else{
+            $result = $this->gatherSection($sectionConfig);
+        }
+        return $result;
+
+    }
+    private function gatherSection($sectionConfig){
+        $result = [];
+
+        //得到内容
+        $content = $this->engine->run($sectionConfig['url']);
+        $content = $this->contentHandle($sectionConfig['start'],$sectionConfig['end'],$content,$this->config['iconv']);
+        preg_match_all($sectionConfig['pattern'],$content,$res);
+        $result['url']=$res[1];
+        $result['title']=$res[2];
+
+        return $result;
+    }
+    //采集小说内容
+    public function novelContent(){
+        $contentConfig = $this->parseConfig('content');
+
+        $url_info = $this->engine->dequeue();
+        $content  = $this->engine->run($url_info['url']);
+        $content = $this->contentHandle($contentConfig['start'],$contentConfig['end'],$content,$this->config['iconv']);
+
+        preg_match($contentConfig['pattern'],$content,$result);
+        $url_info['content']=$result[1];
+
+        return $url_info;
+
+    }
+
 
     public function parseConfig($type){
         $config=[];
@@ -145,12 +237,11 @@ class Novel extends Spider{
                     'pattern'=>$this->config['novel']['pattern']['section_pattern'],
                 ];
                 if( isset($this->config['novel']['detail_page']) ){
-                    $config['detail_page'] = $this->config['novel']['detail_page']
+                    $config['detail_page'] = $this->config['novel']['detail_page'];
                 }
                 break;
             case 'content':
                 $config = [
-                    'url'    =>$this->config['novel']['url']['content_url'],
                     'start'  =>$this->config['novel']['start']['content_start'],
                     'end'    =>$this->config['novel']['end']['content_end'],
                     'pattern'=>$this->config['novel']['pattern']['content_pattern']
@@ -159,6 +250,7 @@ class Novel extends Spider{
         }
         return $config;
     }
+
 
 
 
@@ -221,63 +313,8 @@ class Novel extends Spider{
 
 
 
-    //采集小说章节
-    public function novelSection(){
-        $result = ['url'=>[],'title'=>[]];
-        $sectionConfig = $this->getConfig('section');
 
-        //得到内容
-        $content = $this->_curl($sectionConfig['url']);
-        $all_content = $this->_convertEncode($content,$this->config['iconv']);              //改变编码
 
-        //存在分页
-        if(!empty($sectionConfig['children'])){
-            $content = $this->_substr($all_content,$sectionConfig['children']['start'],$sectionConfig['children']['end']);
-            preg_match_all($sectionConfig['children']['pattern'],$content,$page_url);
-            //分页处理
-            foreach($page_url[1] as $u){
-                $sectionConfig['url'] = $this->_handleUrl($sectionConfig['url'],$u);;
-                $res = $this->_gatherSection($sectionConfig);
-                $result['url']=array_merge($result['url'],$res['url']);
-                $result['title']=array_merge($result['title'],$res['title']);
-            }
-        }else{
-            $result = $this->_gatherSection($sectionConfig);
-        }
-        return $result;
 
-    }
-    private function _gatherSection($sectionConfig){
-        $result = [];
-
-        //得到内容
-        $content = $this->_gatherHandle($sectionConfig['url'],$sectionConfig['start'],$sectionConfig['end'],$this->config['iconv']);
-        preg_match_all($sectionConfig['pattern'],$content,$res);
-        $result['url']=$res[1];
-        foreach($result['url'] as $k=>$url){
-            $result['url'][$k] = $this->_handleUrl($sectionConfig['url'],$url);
-        }
-        $result['title']=$res[2];
-
-        return $result;
-    }
-
-    //采集小说内容
-    public function novelContent(){
-        $contentConfig = $this->getConfig('content');
-        $content=[];
-        $contents = $this->_gatherHandle($contentConfig['url'],$contentConfig['start'],$contentConfig['end'],$this->config['iconv']);
-        if( is_array($contentConfig['url']) ){
-            foreach($contents as $k=>$v){
-                preg_match($contentConfig['pattern'],$v,$result);
-                $content[$k] = isset($result[1])?$result[1]:'';
-            }
-        }else{
-            preg_match($contentConfig['pattern'],$contents,$result);
-            $content = $result[1];
-        }
-        return $content;
-
-    }
 }
 

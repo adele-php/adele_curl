@@ -53,11 +53,6 @@ class Spider extends Model{
     }
 
 
-
-
-
-
-
     protected function contentHandle($start,$end,$content,$iconv=null){
         $content = $this->convertEncode($content,$iconv);              //改变编码
         $content = $this->substr($content,$start,$end);
@@ -86,7 +81,36 @@ class Spider extends Model{
         return $str ;
     }
 
+    /*
+     * 将相对路径变为绝对路径
+     * $now_url 当前页链接
+     * $son_url 当前页发现的子链接
+     */
+    protected function handleUrl( $now_url ,$son_url ){
 
+        preg_match('/^http/',$son_url,$res);
+        if( !$res ){
+            $parse_purl = parse_url( $now_url );
+
+            $first = substr($son_url,0,1) ;
+            if( $first == '/'){
+                $son_url =$parse_purl['scheme']."://".$parse_purl['host'].$son_url;
+
+            }elseif($first == '.' ){
+                if( substr($parse_purl['path'],-1) == '/' ){
+                    $son_url = substr( $son_url,2);
+                    $son_url =$parse_purl['scheme']."://".$parse_purl['host'].$parse_purl['path'].$son_url;
+                }else{
+                    $son_url = substr( $son_url,1);
+                    $son_url =$parse_purl['scheme']."://".$parse_purl['host'].$parse_purl['path'].$son_url;
+                }
+            }else{
+                $son_url =$parse_purl['scheme']."://".$parse_purl['host'].$parse_purl['path'].$son_url;
+            }
+        }
+
+        return $son_url;
+    }
 
 
 
@@ -243,31 +267,8 @@ class Spider extends Model{
         return $content;
     }
 
-    //将相对路径变为绝对路径
-    protected function handleUrl( $now_url ,$son_url ){
 
-        preg_match('/^http/',$son_url,$res);
-        if( !$res ){
-            $parse_purl = parse_url( $now_url );
 
-            $first = substr($son_url,0,1) ;
-            if( $first == '/'){
-                $son_url =$parse_purl['scheme']."://".$parse_purl['host'].$son_url;
 
-            }elseif($first == '.' ){
-                if( substr($parse_purl['path'],-1) == '/' ){
-                    $son_url = substr( $son_url,2);
-                    $son_url =$parse_purl['scheme']."://".$parse_purl['host'].$parse_purl['path'].$son_url;
-                }else{
-                    $son_url = substr( $son_url,1);
-                    $son_url =$parse_purl['scheme']."://".$parse_purl['host'].$parse_purl['path'].$son_url;
-                }
-            }else{
-                $son_url =$parse_purl['scheme']."://".$parse_purl['host'].$parse_purl['path'].$son_url;
-            }
-        }
-
-        return $son_url;
-    }
 }
 
