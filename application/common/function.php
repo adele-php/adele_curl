@@ -69,9 +69,62 @@ function vendor($class) {
         return false;
     }
 
-
 }
 
+/**
+ * 获取输入参数 支持过滤和默认值
+ * 使用方法:
+ * <code>
+ * I('id',0); 获取id参数 自动判断get或者post
+ * I('post.name','','htmlspecialchars'); 获取$_POST['name']
+ * I('get.'); 获取$_GET
+ * </code>
+ * @param string $name 变量的名称 支持指定类型
+ * @param mixed $default 不存在的时候默认值
+ * @param mixed $filter 参数过滤方法
+ * @return mixed
+ */
+function I($name,$default='',$filter=null) {
+    if(strpos($name,'.')) { // 指定参数来源
+        list($method,$name) =   explode('.',$name,2);
+    }else{ // 默认为自动判断
+        $method =   'param';
+    }
+    switch(strtolower($method)) {
+        case 'get'     :   $input =& $_GET;break;
+        case 'post'    :   $input =& $_POST;break;
+        case 'put'     :   parse_str(file_get_contents('php://input'), $input);break;
+        case 'param'   :
+            switch($_SERVER['REQUEST_METHOD']) {
+                case 'POST':
+                    $input  =  $_POST;
+                    break;
+                case 'PUT':
+                    parse_str(file_get_contents('php://input'), $input);
+                    break;
+                default:
+                    $input  =  $_GET;
+            }
+            break;
+        case 'request' :   $input =& $_REQUEST;   break;
+        case 'session' :   $input =& $_SESSION;   break;
+        case 'cookie'  :   $input =& $_COOKIE;    break;
+        case 'server'  :   $input =& $_SERVER;    break;
+        case 'globals' :   $input =& $GLOBALS;    break;
+        default:
+            return NULL;
+    }
+    if(empty($name)) { // 获取全部变量
+        $data       =   $input;
+        //过滤
+    }elseif(isset($input[$name])) { // 取值操作
+        $data       =   $input[$name];
+
+    }else{ // 变量默认值
+        $data       =    isset($default)?$default:NULL;
+    }
+    return $data;
+}
 
 
 

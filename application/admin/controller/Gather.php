@@ -1,16 +1,14 @@
 <?php
-
-
 namespace application\admin\controller;
 
-use application\admin\model\Spider;
+use application\admin\model\Novel;
 use resource\adele\GatherView;
 use resource\adele\Model;
+
 /**
  * 采集
  */
 class Gather extends \resource\Controller{
-    private $spider=null;
 
 	public function __construct(){
         parent::__construct();
@@ -45,12 +43,13 @@ class Gather extends \resource\Controller{
             echo M('gather')->where('id='.$_POST['id'])->update($_POST);
             die;
         }
-        $gather = M('gather')->where('id='.$id)->select();
-        foreach( $gather[0] as $k=>$v){
-            htmlentities( $gather[0][$k],ENT_QUOTES);
+        $gather = M('gather')->where('id='.$id)->find();
+        foreach( $gather as $k=>$v){
+            $gather[$k] = htmlentities( $v,ENT_QUOTES);
         }
-        $this->assign('hid_type',Spider::NOVEL);
-        $this->assign('gather',$gather[0]);
+        //TODO 判断采集类型 小说|新闻 ...
+        $this->assign('hid_type','0');
+        $this->assign('gather',$gather);
         $this->display('edit.html');
     }
     public function del(){
@@ -84,43 +83,13 @@ class Gather extends \resource\Controller{
         $this->display('gather.html');
         $gather_info = M('gather')->where('id='.$id)->select();
 
-        $config = $this->_assembling($gather_info[0]);      //拼装config
-        $this->run($config);
+//        $config = $this->_assembling($gather_info[0]);      //拼装config
+//        $this->run($config);
 
 
 //        echo '<div class="js"><script>$(".content").text(2222)</script></div>';
     }
-    //拼装config
-    private function _assembling($gather_info,$other=[]){
-        $children = ($gather_info['section_page']==1)?['start'=>$gather_info['section_page_start'], 'end'=>$gather_info['section_page_end'], 'pattern'=>$gather_info['section_page_pattern']]:[];
-        $config = [
-            'multi'=>1,
-            'proxy'=>0,
-            'type'=> Spider::NOVEL,
-            'novel'=>[
-                'url'=>[
-                    'detail_url'=>$gather_info['detail_url'],
-                    'section_url'=>$gather_info['section_url'],
-                    'content_url'=>''],
-                'start'=>[
-                    'detail_start'=>array_filter(preg_split('/[;\r\n]+/s', $gather_info['detail_start'])),
-                    'section_start'=>$gather_info['section_start'],
-                    'content_start'=>$gather_info['content_start']],
-                'end'=>    [
-                    'detail_end'=>array_filter(preg_split('/[;\r\n]+/s', $gather_info['detail_end'])),
-                    'section_end'=>$gather_info['section_end'],
-                    'content_end'=>$gather_info['content_end']],
-                'pattern'=>[
-                    'detail_pattern'=>array_filter(preg_split('/[;\r\n]+/s', $gather_info['detail_pattern'])),
-                    'section_pattern'=>$gather_info['section_pattern'],
-                    'content_pattern'=>$gather_info['content_pattern']],
-                'children'=>$children,
-            ],
-        ];
 
-        $config = array_merge($config,$other);
-        return $config;
-    }
 
     public function setTemplet(){
         $templet = ($_GET['val']==0)?1:0;
@@ -143,75 +112,73 @@ class Gather extends \resource\Controller{
     }
     //采集测试测试
     public function test(){
-        $config = $this->_getConfig();
+        $config = [
+            'thread_num'=>1,//线程数
+            'novel' =>[
+                'url'=>    ['detail_url'=>'',    'section_url'=>''],
+                'start'=>  ['detail_start'=>'',  'section_start'=>'',  'content_start'=>''],
+                'end'=>    ['detail_end'=>'',    'section_end'=>'',    'content_end'=>''],
+                'pattern'=>['detail_pattern'=>[],'section_pattern'=>'','content_pattern'=>''],
+                'section_page'=>['start'=>'','end'=>'','pattern'=>''],          //章节分页
+            ],
+            'type'=>'test',   //   normal正常采集  |  test采集测试
+            'test'=>null,   // DETAIL_GATHER|SECTION_GATHER|CONTENT_GATHER
+            'iconv'=>'utf-8',
+        ];
 //        var_dump( $config );die;
         switch($_POST['type']){
             case 'detail':
-                $start  = preg_split('/[;\r\n]+/s', $config['novel']['start']['detail_start']);
-                $config['novel']['start']['detail_start']  = array_filter($start);
-
-                $end  = preg_split('/[;\r\n]+/s', $config['novel']['end']['detail_end']);
-                $config['novel']['end']['detail_end']  = array_filter($end);
-
-                $pattern  = preg_split('/[;\r\n]+/s', $config['novel']['pattern']['detail_pattern']);
-                $config['novel']['pattern']['detail_pattern']  = array_filter($pattern);
-
-                $res = $this->run($config,'novelDetail');
-                echo json_encode($res);
+                $config['novel']['url']['detail_url'] = I('post.detail_url');
+                $config['novel']['start']['detail_start'] = I('post.detail_start');
+                $config['novel']['end']['detail_end'] = I('post.detail_end');
+                $config['novel']['pattern']['detail_pattern'] = I('post.detail_pattern');
+                $config['iconv'] = I('post.iconv');
+                $config['test'] = Novel::DETAIL_GATHER;
                 break;
             case 'section':
-                $res = $this->run($config,'novelSection');
-                echo json_encode($res);
+                $config['novel']['url']['section_url'] = I('post.section_url');
+                $config['novel']['start']['section_start'] = I('post.section_start');
+                $config['novel']['end']['section_end'] = I('post.section_end');
+                $config['novel']['pattern']['section_pattern'] = I('post.section_pattern');
+                $config['iconv'] = I('post.iconv');
+                $config['test'] = Novel::SECTION_GATHER;
+
+                if( I('post.section_page')==1 ){
+                    $config['novel']['section_page']['start'] = I('post.section_page_start');
+                    $config['novel']['section_page']['end'] = I('post.section_page_end');
+                    $config['novel']['section_page']['pattern'] = I('post.section_page_pattern');
+                }
+
                 break;
             case 'content':
-                $sections = $this->run($config,'novelSection');
-                $config['novel']['url']['content_url']=$sections['url'][mt_rand(0,count($sections['url']))];
-                $res = $this->run($config,'novelContent',1);
-                echo json_encode($res);
-                break;
-        }
-    }
+                $config['novel']['start']['content_start'] = I('post.content_start');
+                $config['novel']['end']['content_end'] = I('post.content_end');
+                $config['novel']['pattern']['content_pattern'] = I('post.content_pattern');
+                $config['test'] = Novel::CONTENT_GATHER;
 
-    //解析Post数据成对应config
-    private function _getConfig(){
-        $config = [
-            'multi'=>0,
-            'proxy'=>0,
-        ];
-        $config['iconv'] = isset($_POST['iconv'])?$_POST['iconv']:'utf-8';
+                $config['novel']['url']['section_url'] = I('post.section_url');
+                $config['novel']['start']['section_start'] = I('post.section_start');
+                $config['novel']['end']['section_end'] = I('post.section_end');
+                $config['novel']['pattern']['section_pattern'] = I('post.section_pattern');
+                $config['iconv'] = I('post.iconv');
 
-        switch($config['type']=$_POST['hid_type']){
-            case Spider::NOVEL:
-                $urls   =['detail_url','section_url','content_url'];
-                $starts =['detail_start','section_start','content_start'];
-                $end    =['detail_end','section_end','content_end'];
-                $pattern=['detail_pattern','section_pattern','content_pattern'];
-                $novel = [];
-                foreach($_POST as $k=>$v){
-                    if( in_array($k,$urls) ){
-                        $novel['url'][$k]=$v;
-                    }elseif( in_array($k,$starts) ){
-                        $novel['start'][$k]=$v;
-                    }elseif( in_array($k,$end) ){
-                        $novel['end'][$k]=$v;
-                    }elseif( in_array($k,$pattern) ){
-                        $novel['pattern'][$k]=$v;
-                    }
+                if( I('post.section_page')==1 ){
+                    $config['novel']['section_page']['start'] = I('post.section_page_start');
+                    $config['novel']['section_page']['end'] = I('post.section_page_end');
+                    $config['novel']['section_page']['pattern'] = I('post.section_page_pattern');
                 }
-                $config['novel'] = $novel;
                 break;
         }
-        return $config;
+
+        $result = $this->run($config);
+        echo json_encode($result);
     }
 
 
+    public function run($config,$func='run'){
 
-    public function run( $config ,$func='run',$force=0 ){
-        if(empty($this->spider) || $force==1){
-            $this->spider = new Spider($config);
-        }
-
-        $result = $this->spider->$func();              //执行采集
+        $novel_obj = new Novel($config);
+        $result = $novel_obj->$func();              //执行采集
 
         return $result;
     }

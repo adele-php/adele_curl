@@ -38,7 +38,7 @@ class Novel extends Spider{
                 'start'=>  ['detail_start'=>'',  'section_start'=>'',  'content_start'=>''],
                 'end'=>    ['detail_end'=>'',    'section_end'=>'',    'content_end'=>''],
                 'pattern'=>['detail_pattern'=>[],'section_pattern'=>'','content_pattern'=>''],
-                'detail_page'=>['start'=>'','end'=>'','pattern'=>''],          //章节分页
+                'section_page'=>['start'=>'','end'=>'','pattern'=>''],          //章节分页
             ],
             'type'=>'normal',   //   normal正常采集  |  test采集测试
             'test'=>null,   // DETAIL_GATHER|SECTION_GATHER|CONTENT_GATHER
@@ -50,7 +50,7 @@ class Novel extends Spider{
 
     public function run(){
         //设置采集开始时间
-        GatherView::info('.start_time',date('Y-m-d H:i:s',time()));
+//        GatherView::info('.start_time',date('Y-m-d H:i:s',time()));
 
         //采集测试
         if(!empty($this->config['test'])){
@@ -129,10 +129,10 @@ class Novel extends Spider{
         $content = $this->engine->run($sectionConfig['url']);
 
         //存在分页
-        if(!empty($sectionConfig['detail_page'])){
+        if(!empty($sectionConfig['section_page'])){
             //得到分页链接
-            $page_content = $this->contentHandle($sectionConfig['detail_page']['start'],$sectionConfig['detail_page']['end'],$content,$this->config['iconv']);
-            preg_match_all($sectionConfig['detail_page']['pattern'],$page_content,$page_url);
+            $page_content = $this->contentHandle($sectionConfig['section_page']['start'],$sectionConfig['section_page']['end'],$content,$this->config['iconv']);
+            preg_match_all($sectionConfig['section_page']['pattern'],$page_content,$page_url);
             //分页处理
             foreach($page_url[1] as $u){
                 $sectionConfig['url'] = $this->handleUrl($sectionConfig['url'],$u);
@@ -223,7 +223,7 @@ class Novel extends Spider{
                 foreach( $end as $val ){
                     $s = explode(':',$val);
                     $key = array_shift($s);
-                    $config['start'][$key] = implode('',$s);
+                    $config['end'][$key] = implode('',$s);
                 }
 
                 // TODO 判断配置是否正确(数量)
@@ -236,8 +236,8 @@ class Novel extends Spider{
                     'end'    =>$this->config['novel']['end']['section_end'],
                     'pattern'=>$this->config['novel']['pattern']['section_pattern'],
                 ];
-                if( isset($this->config['novel']['detail_page']) ){
-                    $config['detail_page'] = $this->config['novel']['detail_page'];
+                if( isset($this->config['novel']['section_page']) ){
+                    $config['section_page'] = $this->config['novel']['section_page'];
                 }
                 break;
             case 'content':

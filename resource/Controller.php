@@ -41,7 +41,7 @@ class Controller extends \Smarty{
 //            $mca = $mca[0].'/'.$mca[1].'/'.$mca[2];
             $mc = MODEL_NAME.'/'.CONTROLLER_NAME;
             $now = M('nav')->field('id,pid')
-                ->where('is_hide=0 and url like "'.$mc.'%"')
+                ->where('is_hide=0 and pid=0 and url like "'.$mc.'%"')
 //                ->where('is_hide=0 and url="'.$mca.'"')
                 ->select();
 

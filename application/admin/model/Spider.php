@@ -19,9 +19,6 @@ class Spider extends Model{
     //***************常量*************************
     const NOVEL=-1;
 
-
-
-
 	public function __construct(){
         parent::__construct();
         $this->init();                    //初始化curl
@@ -41,7 +38,7 @@ class Spider extends Model{
         $handle = $this->engine->getHandle();
 
         //设置代理
-        if( $this->config['proxy']['status']==1 ){
+        if( $this->config['proxy']['proxy_status']==1 ){
             $this->engine->setProxy($handle,$this->config['proxy']['proxy_info']);
         }
 
