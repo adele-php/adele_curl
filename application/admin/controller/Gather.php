@@ -13,18 +13,22 @@ class Gather extends \resource\Controller{
 	public function __construct(){
         parent::__construct();
 	}
+
     public function ding(){
         $this->run([]);
     }
+
     public function index(){
         $gather = M('gather')->field('id,detail_url,iconv,templet')->where('1=1')->select();
         $this->assign('gather',$gather);
         $this->registerPlugin("function","num2str",[$this,'num2str']);//第二个参数是模板文件调用的函数名称，可变；第三个参数是上面自定义的函数名称；相应于一个对应关系
         $this->display('index.html');
     }
+
     public function num2str($parm){
         return ($parm['num']==0)?'否':'是';
     }
+
     public function add(){
         if( $_SERVER['REQUEST_METHOD'] !='GET'){
             if( true!== $error=$this->_check(['detail_url'],$_POST) ){
@@ -38,6 +42,7 @@ class Gather extends \resource\Controller{
         $this->assign('hid_type',Spider::NOVEL);
         $this->display('add.html');
     }
+
     public function edit($id=null){
         if( $_SERVER['REQUEST_METHOD'] !='GET'){
             echo M('gather')->where('id='.$_POST['id'])->update($_POST);
@@ -52,8 +57,26 @@ class Gather extends \resource\Controller{
         $this->assign('gather',$gather);
         $this->display('edit.html');
     }
+
     public function del(){
         echo M('gather')->where('id='.$_GET['id'])->delete();
+    }
+
+    private function _check($check,$all_data){
+        foreach($check as $v){
+            if(!array_key_exists($v,$all_data)){
+                return ['error'=>1,'info'=>$v.' 不能为空！'];
+            }
+        }
+        return true;
+    }
+
+    public function getRule(){
+        $gather_info = M('gather')->where('id='.$_GET['id'])->select();
+        foreach( $gather_info[0] as $k=>$v){
+            htmlentities( $gather_info[0][$k],ENT_QUOTES);
+        }
+        echo json_encode($gather_info[0]);
     }
 
     //采集配置页面
@@ -73,6 +96,8 @@ class Gather extends \resource\Controller{
     }
 
 
+    //**********************采集相关************************
+
     public function gather($id){
         set_time_limit(0);                      //设置程序不超时
         ini_set('max_execution_time',0 );       //设置程序不超时
@@ -80,36 +105,60 @@ class Gather extends \resource\Controller{
         @ob_implicit_flush(1);                   //打开绝对刷送,每次echo时会调用flush()刷新缓冲
         @header('X-Accel-Buffering: no');        //解决nginx下无法及时 刷新缓冲
 
-        $this->display('gather.html');
-        $gather_info = M('gather')->where('id='.$id)->select();
+        $this->assign('start_time',date('Y-m-d H:i:s',time()));
+        $this->display('gather.html');die;
 
-//        $config = $this->_assembling($gather_info[0]);      //拼装config
-//        $this->run($config);
+        $gather_info = M('gather')->where('id='.$id)->find();
+        $config = $this->getNovelConfig($gather_info);
+        $this->run($config);
 
 
 //        echo '<div class="js"><script>$(".content").text(2222)</script></div>';
     }
 
+    public function getNovelConfig($gather_info){
+        $config = [
+            'novel' =>[
+                'url'=>    [
+                    'detail_url'=>$gather_info['detail_url'],
+                    'section_url'=>$gather_info['section_url']
+                ],
+                'start'=>  [
+                    'detail_start'=>$gather_info['detail_start'],
+                    'section_start'=>$gather_info['section_start'],
+                    'content_start'=>$gather_info['content_start']
+                ],
+                'end'=>    [
+                    'detail_end'=>$gather_info['detail_end'],
+                    'section_end'=>$gather_info['section_end'],
+                    'content_end'=>$gather_info['content_end']
+                ],
+                'pattern'=>[
+                    'detail_pattern'=>$gather_info['detail_pattern'],
+                    'section_pattern'=>$gather_info['section_pattern'],
+                    'content_pattern'=>$gather_info['content_pattern']
+                ],
+                'section_page'=>['start'=>'','end'=>'','pattern'=>''],          //章节分页
+            ],
+            'type'=>'normal',   //   normal正常采集  |  test采集测试
+            'test'=>null,   // DETAIL_GATHER|SECTION_GATHER|CONTENT_GATHER
+            'iconv'=>'utf-8',
+        ];
+        if( $gather_info['section_page']==1 ){
+            $config['novel']['section_page']=[
+                'start'=>$gather_info['section_page_start'],
+                'end'=>$gather_info['section_page_end'],
+                'pattern'=>$gather_info['section_page_pattern'],
+            ];
+        }
+        return $config;
+    }
 
     public function setTemplet(){
         $templet = ($_GET['val']==0)?1:0;
         echo M('gather')->where('id='.$_GET['id'])->update(['templet'=>$templet]);
     }
-    private function _check($check,$all_data){
-        foreach($check as $v){
-            if(!array_key_exists($v,$all_data)){
-                return ['error'=>1,'info'=>$v.' 不能为空！'];
-            }
-        }
-        return true;
-    }
-    public function getRule(){
-        $gather_info = M('gather')->where('id='.$_GET['id'])->select();
-        foreach( $gather_info[0] as $k=>$v){
-            htmlentities( $gather_info[0][$k],ENT_QUOTES);
-        }
-        echo json_encode($gather_info[0]);
-    }
+
     //采集测试测试
     public function test(){
         $config = [

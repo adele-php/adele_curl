@@ -67,12 +67,15 @@ $(function(){
             }
         }
 
+        var index = layer.load(0, {time: 10*1000});
+
         $.ajax({
             url:url+'/test',
             type:"POST",
             dataType:'json',
             data:data,
             success:function(data){
+                layer.close(index);
                 $('.fade').show().css('opacity',1).css('top','80px').css('overflow','scroll');
                 var status = ['success','info','warning','danger'];
                 var html ='<ul class="list-group">';
