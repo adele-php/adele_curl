@@ -126,7 +126,9 @@ function I($name,$default='',$filter=null) {
     return $data;
 }
 
-
+function myDate(){
+    return date('H:i:s',time());
+}
 
 
 

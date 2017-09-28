@@ -106,7 +106,7 @@ class Gather extends \resource\Controller{
         @header('X-Accel-Buffering: no');        //解决nginx下无法及时 刷新缓冲
 
         $this->assign('start_time',date('Y-m-d H:i:s',time()));
-        $this->display('gather.html');die;
+        $this->display('gather.html');
 
         $gather_info = M('gather')->where('id='.$id)->find();
         $config = $this->getNovelConfig($gather_info);

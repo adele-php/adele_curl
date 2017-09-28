@@ -7,6 +7,7 @@ require_once 'CurlCommon.php';
  */
 class Curl extends CurlCommon{
     private $ch;
+    public $last_curl_info = null;
 
     public function __construct($other_opts=array()){
         $this->ch = curl_init();
@@ -31,6 +32,7 @@ class Curl extends CurlCommon{
         curl_setopt($this->ch,CURLOPT_URL,$url );
         $result = curl_exec($this->ch);
         $curl_info = curl_getinfo( $this->ch ) ;
+        $this->last_curl_info = $curl_info;
 
         $key = $this->linkStorage($url,$curl_info['http_code']);
 

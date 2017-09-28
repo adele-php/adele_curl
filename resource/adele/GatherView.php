@@ -7,13 +7,13 @@ namespace resource\adele;
 class GatherView{
 
     //浏览器输出数据
-	public static function info($select,$info){
+	public static function info($select,$info,$append=false){
 
         $str = '<div class="js"><script>';
 
-        if($select=='.error' || $select=='.other'){
+        if($append===true){
+            //插入模式
             $str .= '$("'.$select.'").append(\'<p>'.$info.'</p>\');';
-
         }else{
             $str .='$("'.$select.'").text(\''.$info.'\');';
         }
@@ -22,6 +22,7 @@ class GatherView{
         echo $str;
     }
 
+//    public static function
 
 
 

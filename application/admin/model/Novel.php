@@ -49,9 +49,6 @@ class Novel extends Spider{
     }
 
     public function run(){
-        //设置采集开始时间
-//        GatherView::info('.start_time',date('Y-m-d H:i:s',time()));
-
         //采集测试
         if(!empty($this->config['test'])){
             return $this->gatherCheckout($this->config['test']);
@@ -59,6 +56,8 @@ class Novel extends Spider{
 
         //采集小说详情
         $detail_info = $this->novelDetail();
+        GatherView::info('.book_name',$detail_info['name']);        //书名
+
 
         //采集小说章节链接 return ['url'=>[],'title'=>[]]
         $section_info = $this->novelSection();
@@ -102,11 +101,23 @@ class Novel extends Spider{
 
     //采集小说详情
     public function novelDetail(){
+        GatherView::info('.other',myDate().' 开始采集小说详情',true);
+
         $detailConfig = $this->parseConfig('detail');
         $result = [];
 
-        //得到详情页内容 TODO
+        //得到详情页内容
         $content = $this->engine->run($detailConfig['url']);
+        if( $content===false ){
+            //采集失败 TODO 重新抓取
+            GatherView::info('.error',myDate().' 详情采集失败----http_code:'.$this->engine->last_curl_info['http_code'],true);
+
+        }
+
+        //采集成功
+        GatherView::info('.other',myDate().'小说详情采集成功！耗时:'.$this->engine->last_curl_info['total_time'],true);
+        GatherView::info('.book_status','OK',true);
+
         //网页内容进行 转码+截取
         $content = $this->contentHandle($detailConfig['start'][0],$detailConfig['end'][0],$content,$this->config['iconv']);
         //匹配信息
@@ -122,11 +133,18 @@ class Novel extends Spider{
 
     //采集小说章节
     public function novelSection(){
+        GatherView::info('.other',myDate().' 开始采集小说章节',true);
         $result = ['url'=>[],'title'=>[]];
         $sectionConfig = $this->parseConfig('section');
 
         //得到章节页内容
         $content = $this->engine->run($sectionConfig['url']);
+        if( $content===false ){
+            //采集失败 TODO 重新抓取
+            GatherView::info('.error',myDate().' 章节采集失败----http_code:'.$this->engine->last_curl_info['http_code'],true);
+
+        }
+        
 
         //存在分页
         if(!empty($sectionConfig['section_page'])){
