@@ -109,6 +109,12 @@ class Spider extends Model{
         return $son_url;
     }
 
+    protected function fatalErrorHandle(){
+        die;
+    }
+
+
+
 
 
 

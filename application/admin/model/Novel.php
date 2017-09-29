@@ -12,7 +12,9 @@ class Novel extends Spider{
     const DETAIL_GATHER =1;             //详情采集
     const SECTION_GATHER=2;             //章节采集
     const CONTENT_GATHER=3;             //内容采集
+    const MIN_WORD=1000;                //采集最少字数
 
+    public $last_force_gather_time = null;
 
     public function __construct( $config ){
         $this->_iniConfig($config);
@@ -56,11 +58,13 @@ class Novel extends Spider{
 
         //采集小说详情
         $detail_info = $this->novelDetail();
-        GatherView::info('.book_name',$detail_info['name']);        //书名
-
+        GatherView::info('.book_name',$detail_info['name']);
 
         //采集小说章节链接 return ['url'=>[],'title'=>[]]
         $section_info = $this->novelSection();
+        GatherView::info('.other',myDate().'发现章节链接数：'.count($section_info['url']),true);
+        GatherView::info('.all',count($section_info['url']));
+
         //章节链接入队列
         foreach($section_info['url'] as $k=>$url){
             $url = $this->handleUrl($this->config['novel']['url']['section_url'],$url);
@@ -107,29 +111,31 @@ class Novel extends Spider{
         $result = [];
 
         //得到详情页内容
-        $content = $this->engine->run($detailConfig['url']);
-        if( $content===false ){
-            //采集失败 TODO 重新抓取
-            GatherView::info('.error',myDate().' 详情采集失败----http_code:'.$this->engine->last_curl_info['http_code'],true);
-
-        }
+        $content = $this->forceGather($detailConfig['url']);
 
         //采集成功
         GatherView::info('.other',myDate().'小说详情采集成功！耗时:'.$this->engine->last_curl_info['total_time'],true);
-        GatherView::info('.book_status','OK',true);
+        GatherView::info('.book_status','OK');
 
         //网页内容进行 转码+截取
         $content = $this->contentHandle($detailConfig['start'][0],$detailConfig['end'][0],$content,$this->config['iconv']);
+        if(strlen($content)<self::MIN_WORD){
+            GatherView::info('.error',myDate()."编码后内容偏少，停止采集，请检查编码",true);
+            $this->fatalErrorHandle();
+        }
         //匹配信息
         foreach($detailConfig['pattern'] as $k=>$pattern){
             $str = $this->substr($content,$detailConfig['start'][$k],$detailConfig['end'][$k]);
-            preg_match($pattern,$str,$res);
             // TODO 匹配失败
-
+            if(!preg_match($pattern,$str,$res)){
+                GatherView::info('.error',myDate()."{$k}匹配失败，停止采集，请检查正则",true);
+                $this->fatalErrorHandle();
+            }
             $result[$k]=$res[1];
         }
         return $result;
     }
+
 
     //采集小说章节
     public function novelSection(){
@@ -137,29 +143,33 @@ class Novel extends Spider{
         $result = ['url'=>[],'title'=>[]];
         $sectionConfig = $this->parseConfig('section');
 
-        //得到章节页内容
-        $content = $this->engine->run($sectionConfig['url']);
-        if( $content===false ){
-            //采集失败 TODO 重新抓取
-            GatherView::info('.error',myDate().' 章节采集失败----http_code:'.$this->engine->last_curl_info['http_code'],true);
-
-        }
-        
+        //得到章节页内容 并判断内容大小
+        $content = $this->forceGather($sectionConfig['url']);
+        //采集成功
+        GatherView::info('.other',myDate().'小说章节采集成功！耗时:'.$this->last_force_gather_time,true);
 
         //存在分页
         if(!empty($sectionConfig['section_page'])){
+            GatherView::info('.other',myDate().'发现分页！',true);
             //得到分页链接
             $page_content = $this->contentHandle($sectionConfig['section_page']['start'],$sectionConfig['section_page']['end'],$content,$this->config['iconv']);
-            preg_match_all($sectionConfig['section_page']['pattern'],$page_content,$page_url);
+            // 匹配失败
+            if(!preg_match_all($sectionConfig['section_page']['pattern'],$page_content,$page_url)){
+                GatherView::info('.error',myDate()."匹配失败，停止采集，请检查分页正则",true);
+                $this->fatalErrorHandle();
+            }
             //分页处理
             foreach($page_url[1] as $u){
                 $sectionConfig['url'] = $this->handleUrl($sectionConfig['url'],$u);
                 $res = $this->gatherSection($sectionConfig);
                 $result['url']=array_merge($result['url'],$res['url']);
                 $result['title']=array_merge($result['title'],$res['title']);
+
+                GatherView::info('.other',myDate().'分页:'.$u.'采集成功！耗时:'.$this->last_force_gather_time,true);
             }
         }else{
             $result = $this->gatherSection($sectionConfig);
+            GatherView::info('.other',myDate().'章节采集成功！耗时:'.$this->last_force_gather_time,true);
         }
         return $result;
 
@@ -167,10 +177,14 @@ class Novel extends Spider{
     private function gatherSection($sectionConfig){
         $result = [];
 
-        //得到内容
-        $content = $this->engine->run($sectionConfig['url']);
+        //得到内容+排除垃圾章节
+        $content = $this->forceGather($sectionConfig['url']);
+        //截取并转码
         $content = $this->contentHandle($sectionConfig['start'],$sectionConfig['end'],$content,$this->config['iconv']);
-        preg_match_all($sectionConfig['pattern'],$content,$res);
+        if(!preg_match_all($sectionConfig['pattern'],$content,$res)){
+            GatherView::info('.error',myDate().'小说章节匹配失败！请检查正则',true);
+            $this->fatalErrorHandle();
+        }
         $result['url']=$res[1];
         $result['title']=$res[2];
 
@@ -180,8 +194,19 @@ class Novel extends Spider{
     public function novelContent(){
         $contentConfig = $this->parseConfig('content');
 
+        $section_num = count($this->engine->queue);
+
+        //出队
         $url_info = $this->engine->dequeue();
+        //当前章节title + 进度
+        GatherView::info('.now_section',$url_info['title']);
+        GatherView::info('.now',$section_num-count($this->engine->queue));
+
         $content  = $this->engine->run($url_info['url']);
+        if(false===$content){
+            GatherView::info('.error',myDate().': '.$url_info['url'].'采集失败,加入队列',true);
+            GatherView::info('.now',$section_num-count($this->engine->queue));
+        }
         $content = $this->contentHandle($contentConfig['start'],$contentConfig['end'],$content,$this->config['iconv']);
 
         preg_match($contentConfig['pattern'],$content,$result);
@@ -189,6 +214,38 @@ class Novel extends Spider{
 
         return $url_info;
 
+    }
+
+    /*
+     *  1.采集$url直到成功 或 达采集次数上限
+     *  2.判断采集内容字数 排除垃圾章节
+     */
+    protected function forceGather($url){
+        $start = time();
+        $content = $this->engine->run($url);
+        if( $content===false ){
+            GatherView::info('.error',myDate().'--'.$url.'--http_code:'.$this->engine->last_curl_info['http_code'],true);
+            //采集失败
+            while($url_info = $this->engine->dequeue()){
+                $num = $this->engine->getLinkNum($url_info['url']);
+                GatherView::info('.error',myDate()."尝试第{$num}次采集",true);
+                $content = $this->engine->run($url_info['url']);
+            }
+            //达到采集次数上限
+            if($content===false){
+                GatherView::info('.error',myDate()."采集次数上限，停止采集,请检查规则",true);
+                $this->fatalErrorHandle();
+            }
+        }
+
+        //判断采集内容字数 排除垃圾章节
+        if(strlen($content)<self::MIN_WORD){
+            GatherView::info('.error',myDate()."详情页面内容太少，停止采集，请检查",true);
+            $this->fatalErrorHandle();
+        }
+
+        $this->last_force_gather_time = date('H:i:s',time()-$start);
+        return $content;
     }
 
 
@@ -271,63 +328,6 @@ class Novel extends Spider{
 
 
 
-
-    //***********************没用到********************************
-
-
-
-
-
-
-    /*
-      'novel'=>[
-          'url'=>['detail_url'=>'http://www.iadele.cn/home/html/2228_1_0.html',    'section_url'=>'',    'content_url'=>''],
-          'start'=>['detail_start'=>$detail_start,  'section_start'=>'',  'content_start'=>''],
-          'end'=>    ['detail_end'=>$detail_end,    'section_end'=>'',    'content_end'=>''],
-          'pattern'=>['detail_pattern'=>$detail_pattern,'section_pattern'=>'','content_pattern'=>''],
-          'page'=>['start'=>'','end'=>'','pattern'=>''],          //分页
-      ],
-   * */
-    private function _gatherNovel(){
-        GatherView::info('.status','正在获取书籍详情采集...');
-
-        $detail  = $this->novelDetail();
-
-        GatherView::info('.book_name',$detail['name']);
-        GatherView::info('.book_status','OK');
-        GatherView::info('.status','正在获取章节...');
-
-        $section = $this->novelSection();
-
-        GatherView::info('.status','采集内容ing');
-        GatherView::info('.all',count($section['url']));
-        if( $this->config['multi']==1 ){
-            $contents=[];$key=0;
-            while(1==1){
-                if( count($section['url'])>10 ){
-                    $this->config['novel']['url']['content_url']=array_slice($section['url'],$key,10);
-                    $key+=10;
-                    $contents = array_merge($contents,$this->novelContent());
-                    GatherView::info('.now',$key);
-
-                }else{
-                    $this->config['novel']['url']['content_url']=array_slice($section['url'],$key);
-                    array_merge($contents,$this->novelContent());
-                    break;
-                }
-            }
-        }else{
-            foreach( $section['url'] as $k => $url ){
-
-                GatherView::info('.now',$k+1);
-                GatherView::info('.now_section',$section['title'][$k]);
-
-                $this->config['novel']['url']['content_url']=$url;
-                $content['title'] = $section['title'][$k];
-                $content['content'] = $this->novelContent();
-            }
-        }
-    }
 
 
 

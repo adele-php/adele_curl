@@ -18,9 +18,10 @@ class CurlCommon {
 
     /*
      * 入队列
-     * url_info
+     * $url_info
      *      'url'=>
      *      other..
+     * $is_batch 是否批量插入
      */
     public function enqueue($url_info,$is_batch=false){
         if($is_batch==true){
@@ -96,6 +97,14 @@ class CurlCommon {
             $this->link['info'][$key]=['num'=>1,'http_code'=>[$http_code],'other_info'=>$other_info ];
         }
         return $key;
+    }
+
+    //得到链接采集次数
+    public function getLinkNum($link){
+        $key = array_search($link,$this->link['urls']);
+        if(false===$key)
+            return false;
+        return $this->link['info'][$key]['num'];
     }
 
 

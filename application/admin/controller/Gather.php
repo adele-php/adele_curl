@@ -101,11 +101,11 @@ class Gather extends \resource\Controller{
     public function gather($id){
         set_time_limit(0);                      //设置程序不超时
         ini_set('max_execution_time',0 );       //设置程序不超时
-        @ob_end_clean();                         //关闭缓冲区
-        @ob_implicit_flush(1);                   //打开绝对刷送,每次echo时会调用flush()刷新缓冲
+        @ob_end_clean();                         //关闭php缓冲区
+        @ob_implicit_flush(1);                   //打开绝对刷送,每次echo时会调用flush()刷新apache缓冲区
         @header('X-Accel-Buffering: no');        //解决nginx下无法及时 刷新缓冲
 
-        $this->assign('start_time',date('Y-m-d H:i:s',time()));
+        $this->assign('start_time',date('H:i:s',time()));
         $this->display('gather.html');
 
         $gather_info = M('gather')->where('id='.$id)->find();

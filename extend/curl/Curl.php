@@ -40,12 +40,12 @@ class Curl extends CurlCommon{
             // 如果是301、302跳转, 抓取跳转后的网页内容
             if ($curl_info['http_code'] == 301 || $curl_info['http_code'] == 302) {
                 $this->errorLog('重定向from:'.$url.' to:'.$curl_info['redirect_url']);
-                $this->enqueue($curl_info['redirect_url']);
+                $this->enqueue(['url'=>$curl_info['redirect_url']]);
             }elseif(in_array($curl_info['http_code'], array('0','502','503','429','403'))){
                 // 抓取次数 小于 允许抓取失败次数
                 if ( $this->link['info'][$key]['num'] <= parent::FAIL_NUM ) {
                     $this->errorLog('http_code:'.$curl_info['http_code'].',重新采集本url:'.$url.  '，1s后尝试第'.($this->link['num'][$key]+1).'次');
-                    $this->enqueue($curl_info['redirect_url']);
+                    $this->enqueue(['url'=>$curl_info['redirect_url']]);
                 }else{
                     $this->errorLog('http_code:'.$curl_info['http_code'].'，已尝试4次，url:'.$url.',放弃此条信息');
                     if ($curl_info['http_code'] == 403  ) {
