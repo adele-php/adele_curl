@@ -14,9 +14,6 @@ class Gather extends \resource\Controller{
         parent::__construct();
 	}
 
-    public function ding(){
-        $this->run([]);
-    }
 
     public function index(){
         $gather = M('gather')->field('id,detail_url,iconv,templet')->where('1=1')->select();
@@ -95,12 +92,17 @@ class Gather extends \resource\Controller{
         $this->display('config.html');
     }
 
+    public function setTemplet(){
+        $templet = ($_GET['val']==0)?1:0;
+        echo M('gather')->where('id='.$_GET['id'])->update(['templet'=>$templet]);
+    }
+
 
     //**********************采集相关************************
 
     public function gather($id){
-        set_time_limit(0);                      //设置程序不超时
-        ini_set('max_execution_time',0 );       //设置程序不超时
+        set_time_limit(0);                       //设置程序不超时
+        ini_set('max_execution_time',0 );        //设置程序不超时
         @ob_end_clean();                         //关闭php缓冲区
         @ob_implicit_flush(1);                   //打开绝对刷送,每次echo时会调用flush()刷新apache缓冲区
         @header('X-Accel-Buffering: no');        //解决nginx下无法及时 刷新缓冲
@@ -113,51 +115,64 @@ class Gather extends \resource\Controller{
         $this->run($config);
 
 
-//        echo '<div class="js"><script>$(".content").text(2222)</script></div>';
     }
 
     public function getNovelConfig($gather_info){
         $config = [
             'novel' =>[
-                'url'=>    [
-                    'detail_url'=>$gather_info['detail_url'],
-                    'section_url'=>$gather_info['section_url']
-                ],
-                'start'=>  [
-                    'detail_start'=>$gather_info['detail_start'],
-                    'section_start'=>$gather_info['section_start'],
-                    'content_start'=>$gather_info['content_start']
-                ],
-                'end'=>    [
-                    'detail_end'=>$gather_info['detail_end'],
-                    'section_end'=>$gather_info['section_end'],
-                    'content_end'=>$gather_info['content_end']
-                ],
-                'pattern'=>[
-                    'detail_pattern'=>$gather_info['detail_pattern'],
-                    'section_pattern'=>$gather_info['section_pattern'],
-                    'content_pattern'=>$gather_info['content_pattern']
-                ],
                 'section_page'=>['start'=>'','end'=>'','pattern'=>''],          //章节分页
             ],
             'type'=>'normal',   //   normal正常采集  |  test采集测试
             'test'=>null,   // DETAIL_GATHER|SECTION_GATHER|CONTENT_GATHER
             'iconv'=>'utf-8',
         ];
+        $config = $this->setNovelConfig($config,$gather_info,'detail');
+        $config = $this->setNovelConfig($config,$gather_info,'section');
+        $config = $this->setNovelConfig($config,$gather_info,'content');
+
+        //设置分页信息
         if( $gather_info['section_page']==1 ){
-            $config['novel']['section_page']=[
-                'start'=>$gather_info['section_page_start'],
-                'end'=>$gather_info['section_page_end'],
-                'pattern'=>$gather_info['section_page_pattern'],
-            ];
+            $config = $this->setNovelConfig($config,$gather_info,'page');
         }
         return $config;
     }
 
-    public function setTemplet(){
-        $templet = ($_GET['val']==0)?1:0;
-        echo M('gather')->where('id='.$_GET['id'])->update(['templet'=>$templet]);
+    /*
+     * $config      要设置的配置
+     * $config_info 配置数组
+     * return 新的$config
+     */
+    private function setNovelConfig($config,$config_info,$type){
+        switch($type){
+            case 'detail':
+                $config['novel']['url']['detail_url']         = $config_info['detail_url'];
+                $config['novel']['start']['detail_start']     = $config_info['detail_start'];
+                $config['novel']['end']['detail_end']         = $config_info['detail_end'];
+                $config['novel']['pattern']['detail_pattern'] = $config_info['detail_pattern'];
+                break;
+            case 'section':
+                $config['novel']['url']['section_url']         = $config_info['section_url'];
+                $config['novel']['start']['section_start']     = $config_info['section_start'];
+                $config['novel']['end']['section_end']         = $config_info['section_end'];
+                $config['novel']['pattern']['section_pattern'] = $config_info['section_pattern'];
+
+                break;
+            case 'content':
+                $config['novel']['start']['content_start']     = $config_info['content_start'];
+                $config['novel']['end']['content_end']         = $config_info['content_end'];
+                $config['novel']['pattern']['content_pattern'] = $config_info['content_pattern'];
+                break;
+            case 'page':
+                $config['novel']['section_page']=[
+                    'start'  =>$config_info['section_page_start'],
+                    'end'    =>$config_info['section_page_end'],
+                    'pattern'=>$config_info['section_page_pattern'],
+                ];
+                break;
+        }
+        return $config;
     }
+
 
     //采集测试测试
     public function test(){
@@ -172,49 +187,30 @@ class Gather extends \resource\Controller{
             ],
             'type'=>'test',   //   normal正常采集  |  test采集测试
             'test'=>null,   // DETAIL_GATHER|SECTION_GATHER|CONTENT_GATHER
-            'iconv'=>'utf-8',
+            'iconv'=>I('post.iconv'),
         ];
 //        var_dump( $config );die;
         switch($_POST['type']){
             case 'detail':
-                $config['novel']['url']['detail_url'] = I('post.detail_url');
-                $config['novel']['start']['detail_start'] = I('post.detail_start');
-                $config['novel']['end']['detail_end'] = I('post.detail_end');
-                $config['novel']['pattern']['detail_pattern'] = I('post.detail_pattern');
-                $config['iconv'] = I('post.iconv');
+                $config = $this->setNovelConfig($config,I('post.'),'detail');
                 $config['test'] = Novel::DETAIL_GATHER;
                 break;
             case 'section':
-                $config['novel']['url']['section_url'] = I('post.section_url');
-                $config['novel']['start']['section_start'] = I('post.section_start');
-                $config['novel']['end']['section_end'] = I('post.section_end');
-                $config['novel']['pattern']['section_pattern'] = I('post.section_pattern');
-                $config['iconv'] = I('post.iconv');
+                $config = $this->setNovelConfig($config,I('post.'),'section');
                 $config['test'] = Novel::SECTION_GATHER;
 
                 if( I('post.section_page')==1 ){
-                    $config['novel']['section_page']['start'] = I('post.section_page_start');
-                    $config['novel']['section_page']['end'] = I('post.section_page_end');
-                    $config['novel']['section_page']['pattern'] = I('post.section_page_pattern');
+                    $config = $this->setNovelConfig($config,I('post.'),'page');
                 }
 
                 break;
             case 'content':
-                $config['novel']['start']['content_start'] = I('post.content_start');
-                $config['novel']['end']['content_end'] = I('post.content_end');
-                $config['novel']['pattern']['content_pattern'] = I('post.content_pattern');
+                $config = $this->setNovelConfig($config,I('post.'),'section');
+                $config = $this->setNovelConfig($config,I('post.'),'content');
                 $config['test'] = Novel::CONTENT_GATHER;
 
-                $config['novel']['url']['section_url'] = I('post.section_url');
-                $config['novel']['start']['section_start'] = I('post.section_start');
-                $config['novel']['end']['section_end'] = I('post.section_end');
-                $config['novel']['pattern']['section_pattern'] = I('post.section_pattern');
-                $config['iconv'] = I('post.iconv');
-
                 if( I('post.section_page')==1 ){
-                    $config['novel']['section_page']['start'] = I('post.section_page_start');
-                    $config['novel']['section_page']['end'] = I('post.section_page_end');
-                    $config['novel']['section_page']['pattern'] = I('post.section_page_pattern');
+                    $config = $this->setNovelConfig($config,I('post.'),'page');
                 }
                 break;
         }

@@ -7,9 +7,20 @@ namespace resource\adele;
 class GatherView{
 
     //浏览器输出数据
-	public static function info($select,$info,$append=false){
-        //TODO $info存入唯一id的文本中 某个链接可以通过唯一id 事实显示采集详细信息 可以放在curl中完成 包括页面大小、时间
+	public static function info($select,$info,$append=false,$env='browser'){
+        //TODO $info存入唯一id的文本中 某个链接可以通过唯一id 实时显示采集详细信息 可以放在curl中完成 包括页面大小、时间
+        if($env=='test'){
+            return;
+        }elseif($env=='normal'){
+            self::browser($select,$info,$append);
+        }
 
+
+
+    }
+
+    //浏览器环境
+    public static function browser($select,$info,$append){
         $str = '<div class="js"><script>';
 
         if($append===true){
@@ -22,8 +33,6 @@ class GatherView{
         $str .='$(".end_time").text(\''.date('H:i:s',time()).'\');</script></div>';
         echo $str;
     }
-
-//    public static function
 
 
 

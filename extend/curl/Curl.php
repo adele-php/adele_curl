@@ -44,7 +44,7 @@ class Curl extends CurlCommon{
             }elseif(in_array($curl_info['http_code'], array('0','502','503','429','403'))){
                 // 抓取次数 小于 允许抓取失败次数
                 if ( $this->link['info'][$key]['num'] <= parent::FAIL_NUM ) {
-                    $this->errorLog('http_code:'.$curl_info['http_code'].',重新采集本url:'.$url.  '，1s后尝试第'.($this->link['num'][$key]+1).'次');
+                    $this->errorLog('http_code:'.$curl_info['http_code'].',重新采集本url:'.$url.  '，1s后尝试第'.($this->link['info'][$key]['num']+1).'次');
                     $this->enqueue(['url'=>$curl_info['redirect_url']]);
                 }else{
                     $this->errorLog('http_code:'.$curl_info['http_code'].'，已尝试4次，url:'.$url.',放弃此条信息');
