@@ -32,18 +32,13 @@
     <tr>
         <th colspan="2" class="info">系统信息</th>
     </tr>
+    {foreach $system_info as $k=>$v}
     <tr>
-        <td>AdelePHP版本</td>
-        <td>1.0</td>
+        <td>{$k}</td>
+        <td>{$v}</td>
     </tr>
-    <tr>
-        <td>服务器操作系统</td>
-        <td>1.0</td>
-    </tr>
-    <tr>
-        <td>运行环境</td>
-        <td>1.0</td>
-    </tr>
+    {/foreach}
+
     <!--<tr>-->
         <!--<td class="active">...</td>-->
         <!--<td class="success">...</td>-->
@@ -65,8 +60,8 @@
         <td>丁馀峰</td>
     </tr>
     <tr>
-        <td>官方QQ群</td>
-        <td>1.0</td>
+        <td>官方QQ</td>
+        <td>553475725</td>
     </tr>
 
 </table>

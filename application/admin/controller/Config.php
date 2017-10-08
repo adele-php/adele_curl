@@ -17,7 +17,9 @@ class Config extends \resource\Controller{
     }
 
 
-
+    public function system(){
+        $this->display('system.html');
+    }
 
 
 }

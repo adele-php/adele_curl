@@ -10,6 +10,7 @@ class Query{
     private $pdo;
     private $pso;
     private $where='';
+    private $order='';
 
     public function __construct( $config = []){
         $this->pdo = Db::connect($config);
@@ -25,7 +26,11 @@ class Query{
             $this->where = ' WHERE '.$this->where;
         }
 
-        $sql='SELECT '.$field.' FROM '.$table.$this->where;
+        if(!empty($this->order) ){
+            $this->order = ' order by '.$this->order;
+        }
+
+        $sql='SELECT '.$field.' FROM '.$table.$this->where.$this->order;
         if( $data===false ){
             return $sql;
         }
@@ -174,6 +179,12 @@ class Query{
 
     public function table($name){
         $this->table = Db::$config['prefix'].$name;
+        return $this;
+    }
+
+    //name desc
+    public function order($str){
+        $this->order = $str;
         return $this;
     }
 

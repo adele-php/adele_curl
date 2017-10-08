@@ -36,18 +36,15 @@ class Controller extends \Smarty{
             ->select();
 
         if( !$now ){
-//            @$refer_url = $_SERVER['HTTP_REFERER'];
-//            $mca = \resource\adele\Request::instance()->mca(parse_url($refer_url)['path'],false);
-//            $mca = $mca[0].'/'.$mca[1].'/'.$mca[2];
             $mc = MODEL_NAME.'/'.CONTROLLER_NAME;
             $now = M('nav')->field('id,pid')
                 ->where('is_hide=0 and pid=0 and url like "'.$mc.'%"')
-//                ->where('is_hide=0 and url="'.$mca.'"')
                 ->select();
+        }
 
-            if(!$now){
-                die('nav 获取不到');
-            }
+        if(!$now){
+            $now=[];
+//            die('nav 获取不到');
         }
 
         $active_id = [];
@@ -62,6 +59,7 @@ class Controller extends \Smarty{
 
         $navs = M('nav')->field('id,name,url,order,pid,group')
                         ->where('is_hide=0')
+                        ->order('`order` ASC')
                         ->select();
         //得到左侧目录树
         foreach( $navs as $k => $v ){
@@ -69,7 +67,7 @@ class Controller extends \Smarty{
             if( in_array($v['id'],$active_id)){
                 $navs[$k]['active']=1;
             }
-            if( (isset($active_id[1])&&$active_id[1]==$v['pid']) || $active_id[0]==$v['pid'] ){
+            if( (isset($active_id[1])&&$active_id[1]==$v['pid']) || (isset($active_id[0])&&$active_id[0]==$v['pid']) ){
                 $left_navs[] = $navs[$k];
             }
 

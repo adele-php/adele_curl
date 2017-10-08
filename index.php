@@ -7,6 +7,7 @@
 // | Author: 553475725@qq.com
 // +----------------------------------------------------------------------
 // 定义__ROOT__
+date_default_timezone_set('Asia/Shanghai');
 
 if (!defined('__ROOT__')) {
     $_root = rtrim(dirname(rtrim($_SERVER['SCRIPT_NAME'], '/')), '/');
