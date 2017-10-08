@@ -28,7 +28,7 @@ class Spider extends Model{
         //导入curl或curls类库
         if( $this->config['thread_num']>1 ){
             vendor('curl/Curls');
-            $this->engine = new \Curls();
+            $this->engine = new \Curls([],$this->config['thread_num']);
         }else{
             vendor('curl/Curl');
             $this->engine = new \Curl();
@@ -51,8 +51,14 @@ class Spider extends Model{
 
 
     protected function contentHandle($start,$end,$content,$iconv=null){
-        $content = $this->convertEncode($content,$iconv);              //改变编码
-        $content = $this->substr($content,$start,$end);
+        if(is_array($content)){
+            foreach($content as $k=>$v){
+                $content[$k]=$this->contentHandle($start,$end,$v,$iconv);
+            }
+        }else{
+            $content = $this->convertEncode($content,$iconv);              //改变编码
+            $content = $this->substr($content,$start,$end);
+        }
 
         return $content;
     }

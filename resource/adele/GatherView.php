@@ -20,15 +20,29 @@ class GatherView{
     }
 
     //浏览器环境
-    public static function browser($select,$info,$append){
+    public static function browser($select,$infos,$append){
+        $info = $infos;
+
         $str = '<div class="js"><script>';
 
-        if($append===true){
-            //插入模式
-            $str .= '$("'.$select.'").append(\'<p>'.$info.'</p>\');';
+        if(is_array($infos)){
+            foreach($infos as $info){
+                if($append===true){
+                    //插入模式
+                    $str .= '$("'.$select.'").append(\'<p>'.$info.'</p>\');';
+                }else{
+                    $str .='$("'.$select.'").text(\''.$info.'\');';
+                }
+            }
         }else{
-            $str .='$("'.$select.'").text(\''.$info.'\');';
+            if($append===true){
+                //插入模式
+                $str .= '$("'.$select.'").append(\'<p>'.$info.'</p>\');';
+            }else{
+                $str .='$("'.$select.'").text(\''.$info.'\');';
+            }
         }
+
 
         $str .='$(".end_time").text(\''.date('H:i:s',time()).'\');</script></div>';
         echo $str;

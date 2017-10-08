@@ -130,7 +130,63 @@ function myDate(){
     return date('H:i:s',time());
 }
 
+//字节转兆
+function byteToGiga($byte){
+    $giga = ($byte/1024)/1024;
+    $giga = round($giga,3);
+    return $giga;
+}
 
+function save_image($img_url,$filename='',$dir='./public/img/'){
+    if($img_url == ""){
+        return false;
+    }
+
+    // 检查路径是否存在，如不存在则创建
+    if (!is_dir($dir)){
+        //第三个参数是“true”表示能创建多级目录，iconv防止中文目录乱码
+        $is_create_success=mkdir(iconv("UTF-8", "GBK", $dir),0777,true);
+        if(!$is_create_success){
+            return false;
+        }
+    }
+
+    //判断文件夹是否可写
+    if( !is_writable($dir) ){
+        echo '文件夹不可写';
+        return false;
+    }
+    //随机文件名
+    if($filename==''){
+        $ext_arr = explode('.',$img_url);
+        $ext = array_pop($ext_arr);
+        $filename = time().mt_rand(0,500).'.'.$ext;
+    }
+
+    ob_start();
+
+    readfile($img_url);
+    $img=ob_get_contents();
+    ob_end_clean();
+
+
+    $file_real_path = $dir.$filename;
+    $fp2=fopen($file_real_path,"a");
+    if(fwrite($fp2,$img) === false){
+        echo '无法打开文件'.$file_real_path;
+        exit();
+    }
+    fclose($fp2);
+
+//    if(function_exists('finfo_open')){
+//        $finfo   =  finfo_open ( FILEINFO_MIME_TYPE );
+//        $type = finfo_file ( $finfo ,  $file_real_path );
+//        var_dump($type);die;
+//
+//    }
+
+    return $file_real_path;
+}
 
 
 

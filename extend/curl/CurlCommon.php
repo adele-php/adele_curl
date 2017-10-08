@@ -33,9 +33,24 @@ class CurlCommon {
         }
     }
 
-    //出队列
-    public function dequeue(){
-        $url_info = array_shift($this->queue);
+    /*
+     * 出队列
+     * @$dequeue_num 出队列个数
+     */
+    public function dequeue($dequeue_num=1){
+        if(empty($this->queue)){
+            die('队列为空，出队失败！');
+        }
+
+        if($dequeue_num==1){
+            $url_info = array_shift($this->queue);
+        }else{
+            if( count($this->queue)<$dequeue_num ){
+                $dequeue_num = count($this->queue);
+            }
+            $url_info = array_slice($this->queue,0,$dequeue_num);
+        }
+
         $url_info = empty($url_info)?false:$url_info;
 
         return $url_info;
@@ -100,7 +115,7 @@ class CurlCommon {
     }
 
     //得到链接采集次数
-    public function getLinkNum($link){
+    public function getLinkGatherNum($link){
         $key = array_search($link,$this->link['urls']);
         if(false===$key)
             return false;
@@ -114,36 +129,48 @@ class CurlCommon {
     }
 
     /*
-     * 处理curl资源的http_code
-     * @return  url,http_code,redirect_url|true
+     * 处理curl_info
+     * $other_info 插入队列的其他信息
+     * http_code:
+     * 1.  200 返回true
+     * 2.  301|40x 插入队列 返回false
      * */
-    protected function httpCodeHandle($resource,$url){
-        $curl_info = curl_getinfo( $resource ) ;
-        if ($curl_info['http_code'] == 200) {
-            //采集成功
-            return true;
-        }else{
-            // 如果是301、302跳转, 抓取跳转后的网页内容
+    protected function curlInfoHandle($curl_info,$other_info=[]){
+        $url = $curl_info['url'];
+        $key = $this->linkStorage($url,$curl_info['http_code']);
+
+        $curl_info['size_download']  = byteToGiga($curl_info['size_download']).'M';       //下载数据总量
+        $curl_info['speed_download'] = byteToGiga($curl_info['speed_download']).'M/s';    //平均下载速度
+
+        $this->last_curl_info = $curl_info;
+        if ($curl_info['http_code'] != 200) {
             if ($curl_info['http_code'] == 301 || $curl_info['http_code'] == 302) {
-                if (!isset($curl_info['redirect_url'])) {
-                    return [
-                        'url'=>$url,
-                        'http_code'=>$curl_info['http_code']
-                    ];
+                // 如果是301、302跳转, 抓取跳转后的网页内容
+                $this->errorLog('重定向from:'.$url.' to:'.$curl_info['redirect_url']);
+                //重定向url加入队列
+                $other_info['url']=$curl_info['redirect_url'];
+                $this->enqueue($other_info);
+            }elseif(in_array($curl_info['http_code'], array('0','502','503','429','403','407'))){
+                if ( $this->link['info'][$key]['num'] <= self::FAIL_NUM ) {
+                    // 抓取次数 小于 允许抓取失败次数
+                    $this->errorLog('http_code:'.$curl_info['http_code'].',重新采集本url:'.$url.  '，1s后尝试第'.($this->link['info'][$key]['num']+1).'次');
+                    //TODO url加入队列
+                    $other_info['url']=$url;
+                    $this->enqueue($other_info);
+                }else{
+                    $this->errorLog('http_code:'.$curl_info['http_code'].'，已尝试4次，url:'.$url.',放弃此条信息');
+                    if ($curl_info['http_code'] == 403  ) {
+                        $this->http_code403_num ++;
+                        if( $this->http_code403_num >= 10){
+                            $this->errorLog('403已达10次，怀疑被拉黑，停止采集！');
+                            die;        //停止脚本
+                        }
+                    }
                 }
-                $redirect_url = $curl_info['redirect_url'];
-                return [
-                    'url'=>$url,
-                    'http_code'=>$curl_info['http_code'],
-                    'redirect_url'=>$redirect_url
-                ];
-            }elseif( in_array($curl_info['http_code'], array('0','502','503','429','403')) ){
-                return [
-                    'url'=>$url,
-                    'http_code'=>$curl_info['http_code']
-                ];
             }
+            return false;
         }
+        return true;
 
     }
 

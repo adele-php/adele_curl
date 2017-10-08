@@ -111,20 +111,22 @@ class Gather extends \resource\Controller{
         $this->display('gather.html');
 
         $gather_info = M('gather')->where('id='.$id)->find();
-        $config = $this->getNovelConfig($gather_info);
-        $this->run($config);
+        $config = $this->getNovelConfig($gather_info,$id);
+        $this->run($config,'run');
 
 
     }
 
-    public function getNovelConfig($gather_info){
+    public function getNovelConfig($gather_info,$gather_id){
         $config = [
+            'thread_num'=>3,//线程数
             'novel' =>[
                 'section_page'=>['start'=>'','end'=>'','pattern'=>''],          //章节分页
             ],
             'type'=>'normal',   //   normal正常采集  |  test采集测试
             'test'=>null,   // DETAIL_GATHER|SECTION_GATHER|CONTENT_GATHER
             'iconv'=>'utf-8',
+            'gather_id'=>$gather_id
         ];
         $config = $this->setNovelConfig($config,$gather_info,'detail');
         $config = $this->setNovelConfig($config,$gather_info,'section');
@@ -223,6 +225,40 @@ class Gather extends \resource\Controller{
     public function run($config,$func='run'){
 
         $novel_obj = new Novel($config);
+
+        //设置书籍入库相关操作
+        $novel_obj->book_put_in = function($detail_info,$gather_id=0){
+            if($book = M('book')->where("name='{$detail_info['name']}'")->find()){
+                return $book['id'];
+            }
+            $detail_info['gid']=$gather_id;
+            $bid = M('book')->insert($detail_info);
+            return $bid;
+        };
+
+        //设置章节入库相关操作 url title content
+        $novel_obj->content_put_in = function($content_info,$thread_num){
+            if($thread_num>1){
+                foreach($content_info as $k=>$v){
+                    if(M('novel')->where("title='{$v['title']}'")->find()){
+                        unset($content_info[$k]);
+                    }
+                }
+                if(empty($content_info)){
+                    return;
+                }
+
+                M('novel')->insertBatch($content_info);
+            }else{
+                if(M('novel')->where("title='{$content_info['title']}'")->find()){
+                    return ;
+                }
+                M('novel')->insert($content_info);
+            }
+
+
+        };
+
         $result = $novel_obj->$func();              //执行采集
 
         return $result;
@@ -784,55 +820,6 @@ class Gather extends \resource\Controller{
 //        M('novel')->addAll($data);
 //    }
 //
-//    //从标题中得到章节数
-//    private function _getSection( $title ){
-////        preg_match('/第([^\s]*)章/U',$title,$arr);
-//        preg_match('/第([零一二三四五六七八九十百千万]*)章/U',$title,$arr);     //第一章
-//        $arr || preg_match('/第(\d*)章/U',$title,$arr);                       //第1章
-//        if( !$arr ){  return (int)$title; }
-//
-//        if( preg_match('/[一二三四五六七八九十]/',$arr[1]) == 1 ) {
-////            var_dump( $arr[1]);/
-////            preg_match_all('/([一二三四五六七八九]*)千?([一二三四五六七八九]*)百?([一二三四五六七八九]*)十?([一二三四五六七八九]*)/',$arr[1] , $res );
-//            $patterns = array('/一/', '/二/', '/三/', '/四/', '/五/', '/六/', '/七/', '/八/', '/九/', '/十/', '/百/', '/千/');
-//            $replaces = array(1, 2, 3, 4, 5, 6, 7, 8, 9, 'a', 'b', 'q');
-//            $str = preg_replace($patterns, $replaces, $arr[1]);
-//
-//            preg_match_all('/(\d)?([abq])?/u', $str, $res);
-//
-//            $num = 0;
-//            //第一百零六章 封禅之地
-//            if( preg_match('/[abq]/',$str ) == 1 ){
-//                foreach ($res[1] as $k => $v) {
-//                    switch ($res[2][$k]) {
-//                        case 'a':
-//                            $figure = 10;
-//                            break;
-//                        case 'b':
-//                            $figure = 100;
-//                            break;
-//                        case 'q':
-//                            $figure = 1000;
-//                            break;
-//                        case '':
-//                            $figure = 1;
-//                            break;
-//                    }
-//                    if ($v == '' && $res[2][$k] != '') $v = 1;
-//                    $num += $v * $figure;
-//                }
-//                return $num;
-//                //第一五二零章 群英荟萃
-//            }else{
-//                return implode( '',$res[1]);
-//            }
-//
-//        }else{
-//
-//            return  (int)$arr[1];
-//        }
-//
-//    }
 
 
 

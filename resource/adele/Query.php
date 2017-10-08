@@ -29,7 +29,7 @@ class Query{
         if( $data===false ){
             return $sql;
         }
-        $this->_exec( $sql );
+        $this->exec( $sql );
         $result = $this->pso->fetchAll();
         return $result;
     }
@@ -43,12 +43,14 @@ class Query{
         }
 
         $sql='SELECT '.$field.' FROM '.$table.$this->where.' limit 1';
+
         if( $data===false ){
             return $sql;
         }
-        $this->_exec( $sql );
+        $this->exec( $sql );
         $result = $this->pso->fetchAll();
-        return $result[0];
+
+        return isset($result[0])?$result[0]:false;
     }
 
     /*
@@ -59,14 +61,14 @@ class Query{
         $where = !empty($this->where)?' WHERE '.$this->where:'';
 
         $con = '';
-        $condition = $this->_filterField($condition);
+        $condition = $this->filterField($condition);
         foreach($condition as $k =>$v){
             $con .= '`'.$k.'`=\''.$v.'\',';
         }
         $con = substr( $con ,0,-1 );
         $sql = 'UPDATE '.$table.' SET '.$con.$where;
 //        echo $sql;die;
-        $this->_exec( $sql );
+        $this->exec( $sql );
         $result = $this->pso->rowCount();
         return $result;
     }
@@ -78,7 +80,7 @@ class Query{
         $table = isset($this->table)?$this->table:'false';
         $where = !empty($this->where)?' WHERE '.$this->where:'';
         $sql = 'DELETE FROM '.$table.$where;
-        $this->_exec( $sql );
+        $this->exec( $sql );
         $result = $this->pso->rowCount();
         return $result;
     }
@@ -89,7 +91,7 @@ class Query{
     public function insert($data=[]){
         $table = isset($this->table)?$this->table:'false';
         $field=$value='';
-        $data = $this->_filterField($data);
+        $data = $this->filterField($data);
         foreach( $data as $k=>$v ){
             $field .='`'.$k.'`,';
             $value .='\''.$v.'\',';
@@ -98,9 +100,49 @@ class Query{
         $value = substr( $value ,0,-1 );
         $sql = 'INSERT INTO '.$table.' ('.$field.') values('.$value.');';
 //        echo $sql;die;
-        $this->_exec( $sql );
+        $this->exec( $sql );
         $result = $this->pso->rowCount();
         return $result;
+    }
+
+    /*
+     * 批量新增 insert into {table} (`a`,`b`,`c`) values (a1,b1,c1),(a2,b2,c2),(a3,b3,c3)
+     * [
+     *      0=>['name'=>'aa',...]
+     * ]
+     */
+    public function insertBatch($datas=[]){
+
+        $table = isset($this->table)?$this->table:'false';
+        $field=$sql=null;
+        $f='';
+        $value=[];
+
+        foreach($datas as $key=>$data){
+            $val = [];
+            $data = $this->filterField($data);
+            foreach( $data as $k=>$v ){
+                if(empty($field)){
+                    // 如果是第一个数组，把k当做字段
+                    $f .='`'.$k.'`,';
+                }
+                $val[]='\''.$v.'\'';
+            }
+            $field=$f;
+            $value[]=implode(',',$val);     // 0=>[a,b,c,d]
+
+        }
+
+        $field = substr( $field ,0,-1 );
+
+        $sql = 'INSERT INTO '.$table.' ('.$field.') VALUES('.implode('),(',$value).');';
+
+
+//        echo $sql;die;
+        $this->exec( $sql );
+        $result = $this->pso->rowCount();
+        return $result;
+
     }
 
     /*
@@ -146,7 +188,7 @@ class Query{
         return $this;
     }
 
-    private function _exec( $sql ,$param=[]  ){
+    private function exec( $sql ,$param=[]  ){
         try{
             $this->pso = $this->pdo->prepare( $sql );
             $this->pso->execute( $param );
@@ -155,16 +197,16 @@ class Query{
             return $result ;*/
         }catch( \PDOException $e ){
             //将错误信息写到log日志文件
-            var_dump($e->getMessage() );
+            var_dump($e->getMessage(),$sql );
             die;
         }
     }
 
-    private function _descTable($type=null){
+    private function descTable($type=null){
         $info=[];
 
         $table = isset($this->table)?$this->table:'false';
-        $this->_exec('desc '.$table);
+        $this->exec('DESC '.$table);
         $table_info = $this->pso->fetchAll();
 
         if( !empty($type)){
@@ -177,18 +219,18 @@ class Query{
         return $info;
     }
 
-    private function _filterField($condition){
-        $fields = $this->_descTable('Field');
+    private function filterField($condition,$primary_key='id'){
+        $fields = $this->descTable('Field');
         foreach( $condition as $field => $v ){
-            if(!in_array($field,$fields) || $field=='id'){
+            if(!in_array($field,$fields) || $field==$primary_key){
                 unset($condition[$field]);continue;
             }
-            $condition[$field] = $this->_handleSpecialStr($v);
+            $condition[$field] = $this->handleSpecialStr($v);
         }
         return $condition;
     }
 
-    private  function _handleSpecialStr($str){
+    private  function handleSpecialStr($str){
         return str_replace('\\','\\\\',$str);
     }
 

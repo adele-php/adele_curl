@@ -19,46 +19,29 @@ class Curl extends CurlCommon{
 
         curl_setopt_array($this->ch,$opts);
         curl_setopt_array($this->ch,$other_opts);
+
+        $this->errorLog("\r\n".'*****start:'.date('Y-m-d H:i:s',time()).'******');
     }
 
-    public function run($url){
-        $this->errorLog("\r\n".'*****start:'.date('Y-m-d H:i:s',time()).'******');
-        $result = $this->curl($url);
+    public function run($url,$other_info=[]){
+        $result = $this->curl($url,$other_info);
 
         return $result;
     }
 
-    protected function curl($url){
+    protected function curl($url,$other_info){
+        //设置url
         curl_setopt($this->ch,CURLOPT_URL,$url );
+        //采集
         $result = curl_exec($this->ch);
+        //curl信息
         $curl_info = curl_getinfo( $this->ch ) ;
-        $this->last_curl_info = $curl_info;
-
-        $key = $this->linkStorage($url,$curl_info['http_code']);
-
-        if ($curl_info['http_code'] != 200) {
-            // 如果是301、302跳转, 抓取跳转后的网页内容
-            if ($curl_info['http_code'] == 301 || $curl_info['http_code'] == 302) {
-                $this->errorLog('重定向from:'.$url.' to:'.$curl_info['redirect_url']);
-                $this->enqueue(['url'=>$curl_info['redirect_url']]);
-            }elseif(in_array($curl_info['http_code'], array('0','502','503','429','403'))){
-                // 抓取次数 小于 允许抓取失败次数
-                if ( $this->link['info'][$key]['num'] <= parent::FAIL_NUM ) {
-                    $this->errorLog('http_code:'.$curl_info['http_code'].',重新采集本url:'.$url.  '，1s后尝试第'.($this->link['info'][$key]['num']+1).'次');
-                    $this->enqueue(['url'=>$curl_info['redirect_url']]);
-                }else{
-                    $this->errorLog('http_code:'.$curl_info['http_code'].'，已尝试4次，url:'.$url.',放弃此条信息');
-                    if ($curl_info['http_code'] == 403  ) {
-                        $this->http_code403_num ++;
-                        if( $this->http_code403_num >= 10){
-                            $this->errorLog('403已达10次，怀疑被拉黑，停止采集！');
-                            die;        //停止脚本
-                        }
-                    }
-                }
-            }
+        //重定向跟踪等操作
+        if(!$this->curlInfoHandle($curl_info,$other_info)){
             return false;
         }
+
+
         return $result;
     }
 

@@ -42,7 +42,7 @@ class Db{
 
         self::$config = array_merge(self::$config,$config);
         $dsn = self::parseDsn();
-        if( false === $key = array_search($dsn,self::$config['instances']['dsns']) ){
+        if( false === ($key = array_search($dsn,self::$config['instances']['dsns'])) ){
             //dsn不同  需要创建新连接
             try{
                 $pdo = new \PDO($dsn,self::$config['username'],self::$config['password']);
